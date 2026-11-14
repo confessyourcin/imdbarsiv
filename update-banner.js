@@ -30,7 +30,8 @@
 
     function show(info) {
         const host = document.createElement('div');
-        host.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:2147483646;';
+        // Oynatıcı overlay'inin (z-index 999999) altında kalır; açık videonun üstünü kapatmaz.
+        host.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:999990;';
         const root = host.attachShadow({ mode: 'open' });
         const style = document.createElement('style');
         style.textContent = `

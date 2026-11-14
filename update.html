@@ -31,6 +31,7 @@
 
             <div class="upd-actions">
                 <button type="button" class="btn btn-play" id="do-update">Şimdi güncelle</button>
+                <button type="button" class="btn btn-ghost" id="reselect">Klasörü yeniden seç</button>
             </div>
             <div class="upd-progress" id="progress" role="status" aria-live="polite" hidden>
                 <span class="spinner" aria-hidden="true"></span>
@@ -67,9 +68,10 @@
         <section class="upd-card" id="state-failed" hidden>
             <p class="upd-kicker warn">Bir adım kaldı</p>
             <h1>Chrome eski sürümü yükledi</h1>
-            <p class="upd-lead">Dosyalar değişti ama Chrome eklentiyi yeni dosyalarla başlatmadı. Eklentiler sayfasında bu eklentinin kartındaki <b>yenile (⟳)</b> düğmesine bas.</p>
+            <p class="upd-lead">Chrome eklentiyi yeni dosyalarla başlatmadı. Eklentiler sayfasında bu eklentinin kartındaki <b>yenile (⟳)</b> düğmesine bas. Sorun sürerse güncelleme başka bir klasöre yazılmış olabilir: klasörü yeniden seçip tekrar güncelle.</p>
             <div class="upd-actions">
                 <button type="button" class="btn btn-play" id="open-extensions-2">Eklentiler sayfasını aç</button>
+                <button type="button" class="btn btn-ghost" id="reselect-2">Klasörü yeniden seç</button>
             </div>
         </section>
 

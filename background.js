@@ -204,7 +204,12 @@ const UPDATE_BRANCH = 'main';
 const UPDATE_MANIFEST_URL = `https://raw.githubusercontent.com/${UPDATE_REPO}/${UPDATE_BRANCH}/manifest.json`;
 const UPDATE_CHECK_EVERY = 6 * 60 * 60 * 1000;
 const UPDATE_SNOOZE = 24 * 60 * 60 * 1000;
+const UPDATE_RETRY_AFTER_ERROR = 30 * 60 * 1000;
 const VERSION_RE = /^\d{1,5}(\.\d{1,5}){0,3}$/;
+// Chrome sürüm parçaları 0-65535 aralığında olmalı.
+function isValidVersion(v) {
+    return typeof v === 'string' && VERSION_RE.test(v) && v.split('.').every(n => Number(n) <= 65535);
+}
 
 function compareVersions(a, b) {
     const pa = String(a).split('.').map(Number);
@@ -221,20 +226,46 @@ async function getUpdateState() {
     return st.upd || {};
 }
 
+// "upd" durumuna yazmalar sıraya alınır ve her yazma yalnızca kendi alanlarını en güncel
+// durumun üzerine birleştirir (eşzamanlı denetim "Sonra" ya da pendingReload'ı ezmesin).
+let updQueue = Promise.resolve();
+function patchUpdateState(patch) {
+    const run = updQueue.then(async () => {
+        const u = await getUpdateState();
+        await chrome.storage.local.set({ upd: { ...u, ...patch } });
+    });
+    updQueue = run.catch(() => {});
+    return run;
+}
+
 async function checkForUpdate(force) {
     const current = chrome.runtime.getManifest().version;
-    const u = await getUpdateState();
+    let u = await getUpdateState();
     let latest = u.latest || null;
-    if (force || !u.checkedAt || Date.now() - u.checkedAt > UPDATE_CHECK_EVERY) {
+    let fetchError = null;
+    const due = !u.checkedAt || Date.now() - u.checkedAt > UPDATE_CHECK_EVERY;
+    const retryOk = !u.failedAt || Date.now() - u.failedAt > UPDATE_RETRY_AFTER_ERROR;
+    if (force || (due && retryOk)) {
         try {
             const res = await fetch(UPDATE_MANIFEST_URL + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' });
             if (res.ok) {
                 const j = await res.json();
                 // Uzaktan yalnızca sürüm metni okunur; başka hiçbir alan kullanılmaz.
-                if (j && typeof j.version === 'string' && VERSION_RE.test(j.version)) latest = j.version;
+                latest = j && isValidVersion(j.version) ? j.version : null;
+                await patchUpdateState({ latest, checkedAt: Date.now(), failedAt: 0 });
+            } else if (res.status === 404) {
+                // Depoda manifest.json yok: hata değil, yalnızca sürüm bilgisi yok.
+                latest = null;
+                await patchUpdateState({ latest, checkedAt: Date.now(), failedAt: 0 });
+            } else {
+                throw new Error('HTTP ' + res.status);
             }
-        } catch (e) { /* çevrimdışı ya da depo boş: sessizce geç */ }
-        await chrome.storage.local.set({ upd: { ...u, latest, checkedAt: Date.now() } });
+        } catch (e) {
+            // Çevrimdışı ya da GitHub hatası: 6 saat değil, 30 dk sonra yeniden denenir.
+            fetchError = String(e && e.message || e);
+            await patchUpdateState({ failedAt: Date.now() });
+        }
+        u = await getUpdateState();
     }
     const available = !!latest && compareVersions(latest, current) > 0;
     const snoozed = available && !!u.snooze && u.snooze.version === latest && Date.now() < u.snooze.until;
@@ -243,6 +274,7 @@ async function checkForUpdate(force) {
         latest,
         available,
         snoozed,
+        fetchError,
         repoUrl: `https://github.com/${UPDATE_REPO}`,
         zipUrl: `https://codeload.github.com/${UPDATE_REPO}/zip/refs/heads/${UPDATE_BRANCH}`
     };
@@ -262,13 +294,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         return true;
     }
     if (msg.type === 'update-snooze') {
-        getUpdateState()
-            .then(u => chrome.storage.local.set({ upd: { ...u, snooze: { version: String(msg.version), until: Date.now() + UPDATE_SNOOZE } } }))
+        patchUpdateState({ snooze: { version: String(msg.version), until: Date.now() + UPDATE_SNOOZE } })
             .then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
         return true;
     }
     if (msg.type === 'update-open') {
-        const to = typeof msg.version === 'string' && VERSION_RE.test(msg.version) ? msg.version : '';
+        const to = isValidVersion(msg.version) ? msg.version : '';
         openUpdatePage(to ? { to } : {}).then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
         return true;
     }
@@ -281,7 +312,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         if (!u.pendingReload) return;
         const { to } = u.pendingReload;
         const now = chrome.runtime.getManifest().version;
-        await chrome.storage.local.set({ upd: { ...u, pendingReload: null, checkedAt: 0 } });
+        await patchUpdateState({ pendingReload: null, checkedAt: 0 });
         const ok = !to || compareVersions(now, to) >= 0;
         await openUpdatePage(ok ? { done: now } : { to, failed: '1' });
     } catch (e) { /* yok say */ }

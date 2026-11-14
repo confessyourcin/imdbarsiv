@@ -78,3 +78,13 @@ Chrome'un yerleşik otomatik güncellemesi yalnızca Chrome Web Mağazası'ndan 
 - Elle yol: zip indirip üzerine kopyalamak; sayfa `manifest.json`'u izler ve yeni sürümü görünce yeniden başlatır.
 
 Doğrulama: çekirdek tarayıcıda OPFS hedefiyle denendi — boş GitHub deposu zip'i ("manifest.json yok"), başka eklenti adı, aynı sürüm ve `../` yolları reddedildi/atlandı; doğru paket 15 dosyayı 42 ms'de yazdı, ikili dosyalar bayt bayt aynı, alt klasör oluştu, yereldeki fazla dosya korundu. Güncelleme kartı ve sayfanın "yeni dosyalar bulundu → yeniden başlat" akışı test kopyasında çalıştı. Gerçek eklentide klasör seçici, izin kalıcılığı ve `chrome.runtime.reload()` sonrası yeni dosyaların yüklenmesi henüz denenmedi.
+
+
+## 1.9.1
+
+- Top 10 satırı pencereye sığar: kart genişliği satırın genişliğinden (kapsayıcı sorgusu, `cqi`) hesaplanır; 92 px (900 px altı ekranda 118 px) alt sınırın altında satır kaydırılır, sığınca oklar gizlenir. Sıra numarası kartla orantılı; "10" daha dar yazılır. Ölçüldü: 1900 px ve 1280 px'te 10 kart sığar, 1024 px ve 375 px'te kaydırma, sayfada yatay taşma yok.
+- Güncelleyici: seçilen klasörün gerçekten Chrome'un yüklediği klasör olduğu yoklama dosyasıyla kanıtlanır (`updater-probe.txt` yazılır, `chrome.runtime.getURL` ile okunur, silinir) — eklentinin başka bir kopyası artık kabul edilmez. Kayıtlı klasör geçersizse unutulur ve aynı tıklamada seçici açılmaz. "Klasörü yeniden seç" düğmesi (güncelleme ve başarısız sayfası).
+- `upd` durum yazmaları sıraya alınır ve alan bazında birleştirilir ("Sonra" ve `pendingReload` ezilmez). Ağ hatası `fetchError` olarak bildirilir ve 30 dk sonra yeniden denenir; 404 "sürüm yok" sayılır.
+- Paket sınırları: zip ≤ 30 MB, açılmış toplam ≤ 60 MB, her girdinin açılmış boyutu merkezi dizindekiyle birebir aynı olmalı. Windows'a ayrılmış adlar (CON, NUL, COM1…), sonu nokta/boşluk olan adlar, `.git`, `.github` ve kökte `_` ile başlayan adlar (`_locales` hariç) yazılmaz. Sürüm parçaları ≤ 65535.
+- TV_SET beklenirken oynatıcının bildirdiği eski bölüm seçimi geri almaz; onay ya da 4 sn zaman aşımı beklenir.
+- Güncelleme kartı oynatıcı overlay'inin altında kalır.

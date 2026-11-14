@@ -4,6 +4,12 @@
 (function () {
     'use strict';
     const VERSION_RE = /^\d{1,5}(\.\d{1,5}){0,3}$/;
+    const MAX_ZIP_BYTES = 30 * 1024 * 1024;      // indirilen zip
+    const MAX_TOTAL_BYTES = 60 * 1024 * 1024;    // açılmış toplam
+    const WIN_RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
+    function isValidVersion(v) {
+        return typeof v === 'string' && VERSION_RE.test(v) && v.split('.').every(n => Number(n) <= 65535);
+    }
 
     function cmpVersions(a, b) {
         const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
@@ -16,6 +22,7 @@
 
     // --- Zip okuma (merkezi dizin; GitHub zip'leri için yeterli, Zip64 yok) ---
     function readZipEntries(buf) {
+        if (buf.byteLength > MAX_ZIP_BYTES) throw new Error('Paket çok büyük');
         const dv = new DataView(buf);
         const len = buf.byteLength;
         let eocd = -1;
@@ -48,22 +55,28 @@
     }
 
     async function inflate(entry) {
-        if (entry.method === 0) return entry.data;
+        if (entry.method === 0) {
+            if (entry.data.byteLength !== entry.usize) throw new Error('Boyut uyuşmuyor: ' + entry.name);
+            return entry.data;
+        }
         if (entry.method !== 8) throw new Error('Desteklenmeyen sıkıştırma: ' + entry.name);
         const stream = new Blob([entry.data]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
         const out = new Uint8Array(await new Response(stream).arrayBuffer());
-        if (entry.usize && out.byteLength !== entry.usize) throw new Error('Boyut uyuşmuyor: ' + entry.name);
+        if (out.byteLength !== entry.usize) throw new Error('Boyut uyuşmuyor: ' + entry.name);
         return out;
     }
 
-    // Güvenli göreli yol: "..", mutlak yol, sürücü harfi, gizli .git vb. reddedilir.
+    // Güvenli göreli yol: "..", mutlak yol, sürücü harfi, Windows'a ayrılmış adlar, sonu nokta/boşluk
+    // olan adlar, .git/.github ve kökte "_" ile başlayan adlar (Chrome'a ayrılmış) reddedilir.
     function safeParts(path) {
         const parts = path.split('/');
         if (!parts.length) return null;
         for (const p of parts) {
             if (!p || p === '.' || p === '..' || /[\\:*?"<>|\x00-\x1f]/.test(p)) return null;
+            if (/[. ]$/.test(p) || WIN_RESERVED.test(p) || p === '.git') return null;
         }
-        if (parts[0] === '.git' || parts[0] === '.github') return null;
+        if (parts[0] === '.github') return null;
+        if (parts[0].startsWith('_') && parts[0] !== '_locales') return null;
         return parts;
     }
 
@@ -74,7 +87,10 @@
         const tops = new Set(entries.map(e => e.name.split('/')[0]));
         const strip = tops.size === 1 && entries.every(e => e.name.includes('/')) ? [...tops][0] + '/' : '';
         const files = [];
+        let total = 0;
         for (const e of entries) {
+            total += e.usize;
+            if (total > MAX_TOTAL_BYTES) throw new Error('Paket çok büyük');
             const rel = strip ? e.name.slice(strip.length) : e.name;
             if (!rel) continue;
             const parts = safeParts(rel);
@@ -85,7 +101,7 @@
         if (!mf) throw new Error('Pakette manifest.json yok. GitHub deposunda dosyalar kök dizinde olmalı.');
         const manifest = JSON.parse(new TextDecoder().decode(await inflate(mf.entry)));
         if (!manifest || manifest.name !== expectName) throw new Error('Paket bu eklentiye ait değil');
-        if (typeof manifest.version !== 'string' || !VERSION_RE.test(manifest.version)) throw new Error('Paketteki sürüm geçersiz');
+        if (!isValidVersion(manifest.version)) throw new Error('Paketteki sürüm geçersiz');
         if (!(opts && opts.force) && cmpVersions(manifest.version, installedVersion) <= 0) {
             throw new Error(`Paketteki sürüm (${manifest.version}) kurulu sürümden (${installedVersion}) yeni değil`);
         }
@@ -99,6 +115,22 @@
         const w = await fh.createWritable();
         await w.write(bytes);
         await w.close();
+    }
+
+    // Klasörün gerçekten Chrome'un bu eklentiyi yüklediği klasör olduğunu kanıtlar:
+    // rastgele içerikli bir dosya yazılır ve eklentinin kendi adresinden okunur.
+    async function provesLoadedFolder(root, extUrlFor) {
+        const name = 'updater-probe.txt';
+        const token = crypto.getRandomValues(new Uint32Array(4)).join('-');
+        try {
+            await writeFile(root, [name], new TextEncoder().encode(token));
+            const res = await fetch(extUrlFor(name) + '?t=' + Date.now(), { cache: 'no-store' });
+            return res.ok && (await res.text()) === token;
+        } catch (e) {
+            return false;
+        } finally {
+            try { await root.removeEntry(name); } catch (e) { /* yok */ }
+        }
     }
 
     // manifest.json en son yazılır: yarıda kalırsa Chrome eski sürümü görmeye devam eder.
@@ -136,6 +168,15 @@
             q.onerror = () => reject(q.error);
         });
     }
+    async function kvDel(key) {
+        const db = await idb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('kv', 'readwrite');
+            tx.objectStore('kv').delete(key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
     async function kvSet(key, value) {
         const db = await idb();
         return new Promise((resolve, reject) => {
@@ -147,8 +188,10 @@
     }
 
     window.ImdbArsivUpdater = {
-        cmpVersions, readZipEntries, preparePackage, installPackage, readManifestFrom,
+        cmpVersions, isValidVersion, readZipEntries, preparePackage, installPackage, readManifestFrom,
+        provesLoadedFolder,
         getSavedDir: () => kvGet('extDir'),
-        saveDir: (h) => kvSet('extDir', h)
+        saveDir: (h) => kvSet('extDir', h),
+        forgetDir: () => kvDel('extDir')
     };
 })();

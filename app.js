@@ -160,7 +160,7 @@
         const b = el('button', 'top-item');
         b.type = 'button';
         b.setAttribute('aria-label', `${rank}. ${item.title}`);
-        b.appendChild(el('span', 'rank', String(rank)));
+        b.appendChild(el('span', rank >= 10 ? 'rank two-digit' : 'rank', String(rank)));
         const stack = el('span', 'top-stack');
         stack.appendChild(posterEl(item, 320));
         stack.appendChild(el('span', 'top-caption', item.title));
@@ -184,7 +184,7 @@
         rail.textContent = '';
         for (let i = 1; i <= 10; i++) {
             const s = el('div', 'top-item skeleton');
-            s.appendChild(el('span', 'rank', String(i)));
+            s.appendChild(el('span', i >= 10 ? 'rank two-digit' : 'rank', String(i)));
             s.appendChild(el('div', 'poster'));
             rail.appendChild(s);
         }
@@ -288,6 +288,10 @@
 
     document.querySelectorAll('.rail-wrap').forEach(wrap => {
         const rail = wrap.querySelector('.rail');
+        // Her şey sığıyorsa kaydırma okları gizlenir.
+        const sync = () => wrap.classList.toggle('scrollable', rail.scrollWidth > rail.clientWidth + 2);
+        new ResizeObserver(sync).observe(rail);
+        new MutationObserver(sync).observe(rail, { childList: true });
         wrap.querySelector('.prev').onclick = () => rail.scrollBy({ left: -rail.clientWidth * 0.85, behavior: 'smooth' });
         wrap.querySelector('.next').onclick = () => rail.scrollBy({ left: rail.clientWidth * 0.85, behavior: 'smooth' });
     });

@@ -680,8 +680,9 @@
                 renderEpisodeUi();
                 return;
             }
-            // Oynatıcı başka bir bölüm bildirdiyse bekleyen TV_SET geçersizdir.
-            if (fromPlayer && pendingSet) clearPendingSet();
+            // TV_SET beklenirken oynatıcı henüz eski bölümü bildirebilir: seçimi geri alma,
+            // onay ya da zaman aşımı (yeniden yükleme) beklensin.
+            if (fromPlayer && pendingSet) return;
             tv.season = season;
             tv.episode = episode;
             // Tüm kaynak adreslerini yeni bölümle yenile (sıra ve sayı aynı kalır).

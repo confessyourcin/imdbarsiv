@@ -48,7 +48,7 @@ Neden tamamen sessiz değil? Chrome, Web Mağazası dışından elle yüklenen e
 | Arşivde "Öne Çıkan" yazıyor, Top 10 gelmiyor | IMDb bot doğrulaması istemiş olabilir. imdb.com'u bir sekmede açıp arşivi yenile |
 | Video "Media not found" | Kaynak kendiliğinden HDFilmCehennemi'ye geçer; olmazsa *Yedek kaynağa geç* |
 | HDFilmCehennemi penceresi açılmadı | Oynatıcıdaki *Oynatıcı penceresinde aç* düğmesi ya da *yeni sekmede aç* bağlantısı |
-| Güncellemede "klasörün bu eklentinin klasörü değil" | Eklentiler sayfasında eklentinin **Ayrıntılar → Kaynak** satırındaki klasörü seç |
+| Güncellemede "Chrome'un bu eklentiyi yüklediği klasör değil" | Eklentinin başka bir kopyası seçilmiş. Eklentiler sayfasında **Ayrıntılar → Kaynak** satırındaki klasörü seç; gerekirse güncelleme sayfasında **Klasörü yeniden seç** |
 | Güncelleme sonrası "Chrome eski sürümü yükledi" | `chrome://extensions` → eklentinin yenile (⟳) düğmesi |
 
 ## İzinler
@@ -62,14 +62,14 @@ Neden tamamen sessiz değil? Chrome, Web Mağazası dışından elle yüklenen e
 | `storage` | Güncelleme denetim zamanı ve "sonra" tercihi |
 | `activeTab` | Etkin sekmede çalışma |
 
-Eklenti kişisel veri toplamaz ve hiçbir sunucuya veri göndermez. Güncelleme denetimi yalnızca bu depodaki `manifest.json` dosyasını okur.
+Eklenti kişisel veri toplamaz. İzlemek istediğin başlığın IMDb kimliği, oynatmak için seçilen kaynağa (VidSrc, VAPlayer, IMDb Player, VidSrc.mov) ve HDFilmCehennemi aramasına gider; aramalar IMDb'ye gider. Güncelleme denetimi yalnızca bu depodaki `manifest.json` dosyasını okur.
 
 ## Yeni sürüm yayınlama (geliştirici için)
 
 1. `manifest.json` içindeki `"version"` değerini artır (ör. `1.9.0` → `1.9.1`).
 2. Dosyaları bu deponun **kök dizinine**, `main` dalına yükle. Alt klasöre yüklersen güncelleme bulunamaz.
 3. `manifest.json` içindeki `"name"` alanını değiştirme; güncelleyici paketi bu adla doğrular.
-4. En geç 6 saat içinde kullanıcılar IMDb'ye girince güncelleme kartını görür. `main`'e her gönderim kullanıcılara gider; yarım işi ayrı dalda tut.
+4. Kullanıcılar IMDb'ye girince en geç 6 saat içinde güncelleme kartını görür (o sürüme "Sonra" diyenler 24 saat sonra, bağlantı hatasında 30 dk sonra yeniden denenir). `main`'e her gönderim kullanıcılara gider; yarım işi ayrı dalda tut.
 
 Teknik notlar: [NOTLAR.md](NOTLAR.md)
 

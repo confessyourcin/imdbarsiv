@@ -18,6 +18,17 @@
         chrome.tabs.create({ url: 'chrome://extensions/?id=' + chrome.runtime.id });
     }
     $('open-extensions').onclick = openExtensions;
+    async function reselectFolder() {
+        try { await U.forgetDir(); } catch (e) { /* yok */ }
+        $('first-time').hidden = false;
+        setError('');
+        setProgress('Kayıtlı klasör unutuldu. “Şimdi güncelle”ye basınca klasör yeniden sorulacak.');
+    }
+    $('reselect').onclick = reselectFolder;
+    $('reselect-2').onclick = async () => {
+        try { await U.forgetDir(); } catch (e) { /* yok */ }
+        location.href = 'update.html';
+    };
     $('open-extensions-2').onclick = openExtensions;
     $('open-archive').onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL('app.html') });
 
@@ -69,34 +80,48 @@
         $('error').textContent = text || '';
     }
 
-    // Seçilen klasör gerçekten bu eklentinin klasörü mü?
+    // Seçilen klasör gerçekten Chrome'un bu eklentiyi yüklediği klasör mü?
+    // (Eklentinin başka bir kopyası da aynı adı taşır; bu yüzden yoklama dosyasıyla kanıtlanır.)
     async function isOurFolder(dir) {
         try {
             const m = await U.readManifestFrom(dir);
-            if (!m || m.name !== self.name || typeof m.version !== 'string') return false;
-            await dir.getFileHandle('update.html');   // bu eklentiye özgü dosya
-            return true;
+            if (!m || m.name !== self.name) return false;
         } catch (e) {
             return false;
         }
+        return U.provesLoadedFolder(dir, (name) => chrome.runtime.getURL(name));
     }
 
+    let phase = '';
     async function getFolder() {
         let dir = null;
         try { dir = await U.getSavedDir(); } catch (e) { dir = null; }
         if (dir) {
+            phase = 'permission';
             let perm = await dir.queryPermission({ mode: 'readwrite' });
             if (perm !== 'granted') perm = await dir.requestPermission({ mode: 'readwrite' });
-            if (perm === 'granted' && await isOurFolder(dir)) return dir;
-            dir = null;
+            if (perm !== 'granted') {
+                const err = new Error('Klasöre yazma izni verilmedi.');
+                err.name = 'NotAllowedError';
+                throw err;
+            }
+            if (await isOurFolder(dir)) return dir;
+            // Kayıtlı klasör artık Chrome'un yüklediği klasör değil: unut, yeni seçim iste.
+            // (Aynı tıklamada seçici açılmaz; izin istemi tıklama etkinliğini tüketmiş olabilir.)
+            try { await U.forgetDir(); } catch (e) { /* yok */ }
+            $('first-time').hidden = false;
+            throw new Error('Kayıtlı klasör artık bu eklentinin yüklendiği klasör değil. Doğru klasörü seçmek için “Şimdi güncelle”ye yeniden bas.');
         }
         if (typeof window.showDirectoryPicker !== 'function') {
             throw new Error('Bu tarayıcı klasöre yazmayı desteklemiyor. Aşağıdaki “elle güncelle” yolunu kullan.');
         }
+        phase = 'picker';
         setProgress('Eklenti klasörünü seç…');
-        dir = await window.showDirectoryPicker({ id: 'imdbarsiv', mode: 'readwrite' });
+        // Tarayıcı eklenti klasörünün yolunu vermez; seçici çoğu kişinin zip'i çıkardığı İndirilenler'de açılır.
+        dir = await window.showDirectoryPicker({ id: 'imdbarsiv', mode: 'readwrite', startIn: 'downloads' });
+        phase = 'verify';
         if (!(await isOurFolder(dir))) {
-            throw new Error('Seçilen klasör bu eklentinin klasörü değil. İçinde manifest.json ve update.html olan klasörü seç.');
+            throw new Error('Seçilen klasör, Chrome\'un bu eklentiyi yüklediği klasör değil (başka bir kopya olabilir). Eklentiler sayfasında Ayrıntılar → Kaynak satırındaki klasörü seç.');
         }
         try { await U.saveDir(dir); } catch (e) { /* bir dahaki sefere yeniden sorulur */ }
         $('first-time').hidden = true;
@@ -109,13 +134,20 @@
         busy = true;
         const btn = $('do-update');
         btn.disabled = true;
+        $('reload-now').disabled = true;
+        $('reselect').disabled = true;
         setError('');
+        phase = '';
         try {
             const dir = await getFolder();
+            phase = 'download';
             setProgress('Yeni sürüm indiriliyor…');
             const res = await fetch(info.zipUrl, { cache: 'no-store', credentials: 'omit' });
             if (!res.ok) throw new Error('İndirme başarısız (HTTP ' + res.status + ')');
+            const declared = Number(res.headers.get('content-length') || 0);
+            if (declared > 30 * 1024 * 1024) throw new Error('Paket çok büyük');
             const buf = await res.arrayBuffer();
+            phase = 'install';
             setProgress('Paket doğrulanıyor…');
             const pkg = await U.preparePackage(buf, self.name, installed);
             const total = await U.installPackage(dir, pkg, (i, n) => setProgress(`Dosyalar yazılıyor… ${i}/${n}`));
@@ -125,11 +157,15 @@
             setTimeout(() => reloadInto(pkg.version), 800);
         } catch (e) {
             setProgress('');
-            const msg = e && e.name === 'AbortError' ? 'Klasör seçimi iptal edildi.'
-                : e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') ? 'Klasöre yazma izni verilmedi. “Şimdi güncelle”ye yeniden basıp izni onayla.'
-                : 'Güncellenemedi: ' + (e && e.message || e);
+            const msg = e && e.name === 'AbortError' && phase === 'picker' ? 'Klasör seçimi iptal edildi.'
+                : e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') && (phase === 'permission' || phase === 'picker')
+                    ? 'Klasöre yazma izni verilmedi. “Şimdi güncelle”ye yeniden basıp izni onayla.'
+                : 'Güncellenemedi: ' + (e && e.message || e)
+                    + (phase === 'install' ? ' Bazı dosyalar yazılmış olabilir; “Şimdi güncelle” ile yeniden dene.' : '');
             setError(msg);
             btn.disabled = false;
+            $('reload-now').disabled = false;
+            $('reselect').disabled = false;
         } finally {
             busy = false;
         }
@@ -140,7 +176,7 @@
         $('ver-from').textContent = info.current;
         $('ver-to').textContent = info.latest;
         $('zip-link').href = info.zipUrl;
-        $('reload-now').onclick = () => reloadInto(info.latest);
+        $('reload-now').onclick = () => { if (!busy) reloadInto(info.latest); };
         $('do-update').onclick = () => runUpdate(info);
         document.title = `Güncelleme ${info.latest} · IMDb Arşiv`;
         U.getSavedDir().then(d => { if (d) $('first-time').hidden = true; }, () => {});
@@ -156,9 +192,9 @@
         if (info && info.ok && info.available) { showUpdate(info); return; }
         $('check-actions').hidden = false;
         if (info && info.repoUrl) $('repo-link').href = info.repoUrl;
-        if (!info || !info.ok) {
+        if (!info || !info.ok || info.fetchError) {
             $('check-title').textContent = 'Denetlenemedi';
-            $('check-text').textContent = 'GitHub\'a ulaşılamadı. İnternet bağlantını kontrol edip yeniden dene.';
+            $('check-text').textContent = 'GitHub\'a ulaşılamadı' + (info && info.fetchError ? ' (' + info.fetchError + ')' : '') + '. İnternet bağlantını kontrol edip yeniden dene.';
         } else if (!info.latest) {
             $('check-title').textContent = 'Sürüm bilgisi bulunamadı';
             $('check-text').textContent = 'GitHub deposunda manifest.json henüz yok ya da okunamadı.';
