@@ -2,6 +2,13 @@
 
 Bu dosya sürüm sürüm teknik kararları ve doğrulama notlarını tutar. Kullanıcı rehberi için README.md.
 
+## Güncel arşiv değişiklikleri
+
+- `app-preferences.js`: ilk kullanımda TR/karanlık tema; sağ üstte tema ve TR/EN seçimi. Tercihler `localStorage` içinde saklanır.
+- `turkish-metadata.js`: TMDB `find` isteğinde `tr-TR` veya `en-US`; dizi için `original_name`, film için çevrilmiş `title`. Önce IMDb verisi kopyalanır, yalnızca dolu TMDB alanları bunun üzerine eklenir. Ağ/HTTP/ayrıştırma hatasında IMDb verisi korunur. Türler TR seçiliyken yerel sözlükle çevrilir.
+- TMDB yanıtları dile ve film/dizi kimliğine göre ayrı anahtarla 24 saat önbelleğe alınır. Varsayılan API anahtarı kodda bulunur; anahtar formu kaldırılmıştır.
+- TR/EN için gerçek TMDB yanıtları ve tercihlerin kaydedilmesi yerel testlerle kontrol edildi. Görsel tarayıcı kontrolü yapılmadı.
+
 ## 1.6.0 ve öncesi
 
 Film ve dizi menülerinde dört kaynak görünür: VidSrc, VidAPI / VAPlayer, IMDb Player, VidSrc.mov. Her iki menü ve oynatıcı penceresi aynı kaynak sırasını kullanır.
