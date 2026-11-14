@@ -343,7 +343,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             sendResponse({ ok: false });
             return;
         }
-        patchUpdateState({ pendingReload: { to: msg.version, inline: true, at: Date.now() } })
+        const targetTabId = url.pathname === '/update.html'
+            ? (url.searchParams.has('target') ? Number(url.searchParams.get('target')) : null)
+            : (sender.tab ? sender.tab.id : null);
+        patchUpdateState({ pendingReload: {
+            to: msg.version,
+            inline: true,
+            tabId: Number.isInteger(targetTabId) && targetTabId >= 0 ? targetTabId : null,
+            at: Date.now()
+        } })
             .then(() => {
                 sendResponse({ ok: true });
                 setTimeout(async () => {
@@ -367,7 +375,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const now = chrome.runtime.getManifest().version;
         await patchUpdateState({ pendingReload: null, checkedAt: 0 });
         const ok = !to || compareVersions(now, to) >= 0;
-        if (u.pendingReload.inline && ok) return;
+        if (u.pendingReload.inline && ok) {
+            if (Number.isInteger(u.pendingReload.tabId)) {
+                try {
+                    const tab = await chrome.tabs.get(u.pendingReload.tabId);
+                    const url = new URL(tab.url || 'about:blank');
+                    const imdb = (url.protocol === 'https:' || url.protocol === 'http:') &&
+                        (url.hostname === 'imdb.com' || url.hostname.endsWith('.imdb.com'));
+                    if (imdb || tab.url === chrome.runtime.getURL('app.html')) {
+                        await chrome.tabs.reload(tab.id);
+                    }
+                } catch (e) { /* sekme kapanmış veya adresi değişmiş olabilir */ }
+            }
+            return;
+        }
         await openUpdatePage(ok ? { done: now } : { to, failed: '1' });
     } catch (e) { /* yok say */ }
 })();
