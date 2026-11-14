@@ -2,7 +2,17 @@
 
 Bu dosya sürüm sürüm teknik kararları ve doğrulama notlarını tutar. Kullanıcı rehberi için README.md.
 
-## 1.9.7: Servers listesi
+## Güncel: birleşik kaynak listesi
+
+VidSrc.mov, içteki vidsrc.sh iframe'inin `MEDIA_NOT_FOUND` mesajını üst sayfaya iletmediği için yedek geçişi burada duruyordu. `vidsrc-mov-relay.js`, yalnızca vidsrc.mov embed çerçevesinde çalışır; iç iframe'in tam kökenini ve `contentWindow` değerini doğrulayıp bulunamadı mesajını üst oynatıcıya aktarır. Sağlayıcı korumaları veya başlıkları değiştirilmez.
+
+Playwright'ta gerçek sağlayıcılarla yerel iframe testinde Lupin S4B1 için VidSrc.mov → Braflix otomatik geçişi doğrulandı. İletici testte başlangıç betiği olarak yüklendi; Chrome'un kurulu eklentiye manifest üzerinden içerik betiği enjekte etmesi ayrıca denenmedi.
+
+Servers girdileri ana Kaynak listesine taşındı: 13 iframe sağlayıcısından sonra HDFilmCehennemi gelir. Doğrulanmış `MEDIA_NOT_FOUND` mesajında HDFC'ye doğrudan sıçrama kaldırıldı; önce kalan iframe'ler denenir. Hata mesajında hem açık iframe'in `contentWindow` değeri hem sağlayıcının tam kökeni denetlenir. VidSrc sezon protokolü yalnızca vidsrc.sh için geçerlidir. Denenmiş/bulunamayan kaynaklar atlanır; bütün kaynaklar tükenince durulur. HDFC'de yalnız dizi sayfası bulunması bölümün bulunduğu sayılmaz; bu durumda otomatik popup açılmaz.
+
+Yerel mock modal testi: tek kaynak menüsü, 13 iframe'in sıralı denenmesi, HDFC'nin en son aranması, HDFC başarısızlığında durma, yanlış köken/gönderen mesajlarının reddi ve dizi URL'leri kontrol edildi. JavaScript sözdizimi ve manifest kontrolleri geçti. Gerçek yüklü eklentide bütün sağlayıcıların hata bildirimi/oynatımı denenmedi; yüklenmiş iframe iç hatasını bildirmiyorsa otomatik algılanamaz.
+
+## 1.9.7: Servers listesi (önceki davranış)
 
 Oynatıcı araç çubuğunda **Kaynak** listesinin yanında ayrı bir **Servers** listesi var (`EXTRA_SERVERS`, `getExtraServers` → `content.js`). Ana kaynak sırasına (`getServers`), `attempted` kümesine ve otomatik yedek geçişine girmez; zaman aşımı yok, yalnızca elle seçilir. Ek sunucu açıkken "Yedek kaynağa geç" sıradaki ek sunucuya gider, Kaynak listesinden seçim yapılınca Servers sıfırlanır. Dizide bölüm değişince seçili ek sunucu yeni bölüm adresiyle yeniden yüklenir. Ek sunucu açıkken VidSrc mesajları yok sayılır (`extraCurrent >= 0`). Liste HDFC girdisinin `external` alanından (IMDb kimliği, film/dizi) üretilir; HDFC girdisi yoksa liste görünmez.
 

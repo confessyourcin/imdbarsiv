@@ -7,9 +7,8 @@ IMDb sayfalarına oynatıcı ekleyen ve kendi film/dizi arşivi sayfası olan bi
 ## Özellikler
 
 - **IMDb sayfasında oynat** — Film ve dizi sayfalarına *Play* düğmesi ve kaynak menüsü eklenir. Oynatıcı aynı sayfada açılır.
-- **Yedek kaynaklar** — VidSrc, VidAPI / VAPlayer, IMDb Player, VidSrc.mov. Bir kaynak açılmazsa sıradakine geçilir.
-- **Servers listesi** — Oynatıcıda ayrı bir açılır liste: Braflix, Nxsha, EmbedMaster, VidCore, VixSrc, VidSrc.party, VidSrc.buzz, EmbedBandit, VidZen. Yalnızca elle seçilir; otomatik yedek geçişine girmez. Dizide bölüm değişince seçili sunucu yeni bölümle açılır.
-- **"Media not found" olunca HDFilmCehennemi** — VidSrc içeriği bulamazsa kaynak kendiliğinden HDFilmCehennemi'ye geçer ve oynatıcı boyutunda bir pencerede açılır. Site kendi oynatıcısının başka sayfalara gömülmesine izin vermediği için ayrı pencere kullanılır.
+- **Tek Kaynak listesi** — VidSrc, VidAPI / VAPlayer, IMDb Player, VidSrc.mov, Braflix, Nxsha, EmbedMaster, VidCore, VixSrc, VidSrc.party, VidSrc.buzz, EmbedBandit, VidZen ve en sonda HDFilmCehennemi. Ayrı Servers menüsü kaldırıldı. Dizide bölüm değişince bütün adresler yeni bölümle yenilenir.
+- **Otomatik yedek** — Açık iframe kendi kökeninden `MEDIA_NOT_FOUND` bildirirse, iframe yükleme hatasında veya yükleme zaman aşımında sıradaki denenmemiş iframe kaynağı açılır. Bunlar tükenince HDFilmCehennemi aranır; içerik/bölüm bulunursa ayrı oynatıcı penceresi açılır. Bütün kaynaklar başarısızsa döngü durur. İç hatasını bildirmeyen yüklenmiş iframe'lerde "Yedek kaynağa geç" kullanılmalıdır; sayfanın yüklenmesi video oynadığı anlamına gelmez.
 - **Sezon / bölüm seçici** — Dizilerde oynatıcı panelinde Sezon, Bölüm ve *Sonraki bölüm ›* düğmesi bulunur.
 - **IMDb Arşivi sayfası** — Araç çubuğundaki eklenti simgesine tıkla:
   - Bugün en popüler **Top 10 film** ve **Top 10 dizi** (IMDb'den, kapak ve puanlarıyla)
@@ -70,6 +69,7 @@ Neden tamamen sessiz değil? Chrome, Web Mağazası dışından elle yüklenen e
 | `codeload.github.com` | Güncelleme zip'ini indirme |
 | `api.themoviedb.org` | Kullanıcı TMDB API anahtarı eklerse Türkçe ad ve açıklamaları alma |
 | `api.tvmaze.com` | Arşiv oynatıcısında IMDb sezon/bölüm listesi alınamazsa yedek bölüm verisi |
+| `vidsrc.mov/embed/*` (içerik betiği) | İç VidSrc iframe'inin bulunamadı mesajını ana oynatıcıya aktarma; sayfa içeriği değiştirilmez |
 | `storage` | Güncelleme denetim zamanı ve "sonra" tercihi |
 | `activeTab` | Etkin sekmede çalışma |
 

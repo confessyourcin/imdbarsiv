@@ -2,6 +2,7 @@
     function getServers(imdbId, isTV, season, episode) {
         const list = getEmbedServers(imdbId, isTV, season, episode);
         if (!list.length) return list;
+        list.push(...getExtraServers(imdbId, isTV, season, episode));
         // Yerleşik kaynakların hiçbirinde yoksa: HDFilmCehennemi sayfasını oynatıcı boyutunda
         // açılır pencerede açar. (Site sayfasının ve oynatıcısının başka sitelerde
         // çerçevelenmesine izin vermiyor; bu koruma aşılmaz.)
@@ -40,8 +41,8 @@
         ];
     }
 
-    // Oynatıcıdaki ayrı "Servers" listesi. Ana kaynak sırasına ve otomatik yedek
-    // geçişine girmez; yalnızca elle seçilir. vidsrc.sh aynaları (vidsrc.me/.ir, vidsrc2.ru,
+    // Ek sağlayıcılar aynı Kaynak listesinde, HDFC'den önce denenir.
+    // vidsrc.sh aynaları (vidsrc.me/.ir, vidsrc2.ru,
     // videasy.ws) ve VixSrc'nin yayınını kullanan vidsrc.pk bilinçli olarak yok. VidSrc.party ve
     // VidSrc.buzz adı benzese de videoyu vidsrc.sh'ten farklı sunuculardan çeker (ağ trafiğiyle denendi). Hepsi IMDb kimliğiyle denendi (NOTLAR.md, 1.9.7).
     const EXTRA_SERVERS = [
@@ -527,8 +528,8 @@
             && season >= 1 && season <= MAX_SEASON && episode >= 1 && episode <= MAX_EPISODE;
     }
 
-    // VidSrc'nin "Media not found" dediği adresler (sayfa açık kaldıkça hatırlanır).
-    const vidsrcNotFound = new Set();
+    // Sağlayıcının "Media not found" bildirdiği adresler (sayfa açık kaldıkça hatırlanır).
+    const unavailableSources = new Set();
     const VIDSRC_ORIGIN = 'https://vidsrc.sh';
 
     function showModal(url, servers = [], opts = {}) {
@@ -538,14 +539,11 @@
         const sources = servers.length ? servers : [{ name: 'Oynatıcı', url }];
         let current = Math.max(0, sources.findIndex(server => server.url === url));
         const hdfcIndex = sources.findIndex(server => server.external);
-        // Kullanıcı kaynağı menüden kendisi seçmediyse ve VidSrc bu içeriği daha önce
-        // bulamadıysa doğrudan HDFilmCehennemi ile başla.
-        // VidSrc "bulunamadı" deyince HDFC'ye modal başına yalnızca bir kez sıçranır;
-        // sonra normal yedek sırası işler (aksi halde diğer kaynaklara ulaşılamaz).
-        let jumpedToHdfc = false;
-        if (!explicit && hdfcIndex >= 0 && vidsrcNotFound.has(sources[current].url)) {
-            current = hdfcIndex;
-            jumpedToHdfc = true;
+        // Daha önce bulunamayan kaynağı atla; HDFC her zaman son seçenektir.
+        if (!explicit && unavailableSources.has(sources[current].url)) {
+            const available = sources.findIndex(server => !server.external && !unavailableSources.has(server.url));
+            if (available >= 0) current = available;
+            else if (hdfcIndex >= 0) current = hdfcIndex;
         }
         let attempted = new Set();
         let timeoutId;
@@ -599,34 +597,7 @@
         iframe.allowFullscreen = true;
         iframe.allow = "autoplay; encrypted-media";
 
-        // ---- Ayrı "Servers" listesi (ek sağlayıcılar; elle seçilir, otomatik yedeğe girmez) ----
-        const meta = (sources.find(server => server.external) || {}).external || null;
-        let extras = meta ? getExtraServers(meta.imdbId, meta.isTV, meta.season, meta.episode) : [];
-        let extraCurrent = -1;   // >= 0 ise iframe'de ek sunucu açık
-        let extraSelect = null, extraLabel = null;
-        if (extras.length) {
-            extraLabel = document.createElement('label');
-            extraLabel.className = 'vidsrc-source-label';
-            extraLabel.textContent = 'Servers';
-            extraSelect = document.createElement('select');
-            extraSelect.className = 'vidsrc-source-select vidsrc-extra-select';
-            extraSelect.setAttribute('aria-label', 'Ek sunucular');
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = 'Seç…';
-            placeholder.disabled = true;   // ek sunucu açıkken "Seç…" ile boş görünüme düşülmesin
-            extraSelect.appendChild(placeholder);
-            extras.forEach((server, index) => {
-                const option = document.createElement('option');
-                option.value = String(index);
-                option.textContent = server.name;
-                extraSelect.appendChild(option);
-            });
-            extraLabel.appendChild(extraSelect);
-        }
-
         toolbar.appendChild(label);
-        if (extraLabel) toolbar.appendChild(extraLabel);
         toolbar.appendChild(next);
         toolbar.appendChild(close);
         toolbar.appendChild(status);
@@ -779,13 +750,9 @@
                     if (select.options[i]) select.options[i].textContent = server.name;
                 });
             }
-            const freshExtras = getExtraServers(tv.imdbId, true, String(season), String(episode));
-            if (freshExtras.length === extras.length) extras = freshExtras;
             renderEpisodeUi();
             if (fromPlayer) return;   // oynatıcı zaten bu bölümde
-            jumpedToHdfc = false;
             clearPendingSet();
-            if (extraCurrent >= 0) { loadExtra(extraCurrent); return; }
             const src = sources[current];
             if (vidsrcLive && src && !src.external && src.url.startsWith(VIDSRC_ORIGIN + '/') && iframe.contentWindow) {
                 attempted = new Set([current]);
@@ -829,8 +796,6 @@
             if (manual) attempted = new Set();
             current = index;
             attempted.add(index);
-            extraCurrent = -1;
-            if (extraSelect) extraSelect.value = '';
             select.value = String(index);
             status.textContent = `${sources[index].name} yükleniyor…`;
             const token = ++generation;
@@ -855,29 +820,6 @@
                 if (!closed && token === generation) automaticFallback();
             }, 15000);
             iframe.src = sources[index].url;
-        }
-        // Ek sunucu: yalnızca elle seçilir. Zaman aşımı ve otomatik yedek geçişi yok;
-        // ana kaynak sırası (current, attempted) değişmez.
-        function loadExtra(index) {
-            if (closed || !extras[index]) return;
-            clearTimeout(timeoutId);
-            clearPendingSet();
-            vidsrcLive = false;
-            extraCurrent = index;
-            extraSelect.value = String(index);
-            select.selectedIndex = -1;
-            const server = extras[index];
-            const token = ++generation;
-            if (tv) ensureEpisodes(tv.season || 1);
-            status.textContent = `${server.name} yükleniyor…`;
-            extPanel.hidden = true;
-            iframe.hidden = false;
-            iframe.onload = () => {
-                if (closed || token !== generation) return;
-                status.textContent = `${server.name} sayfası açıldı. Oynatılmıyorsa başka sunucu seçebilirsin.`;
-            };
-            iframe.onerror = null;
-            iframe.src = server.url;
         }
         // Oynatıcı alanının görünüm alanındaki yeri (CSS piksel). Ekran koordinatına
         // çevirme arka planda, sekmenin yakınlaştırma oranıyla yapılır.
@@ -946,9 +888,8 @@
                 extPanel.appendChild(openBtn);
                 extPanel.appendChild(link);
                 status.textContent = 'HDFilmCehennemi bağlantısı hazır.';
-                // Kullanıcı bu kaynağı seçtiyse ya da VidSrc "Media not found" dediyse
-                // pencereyi hemen aç; genel otomatik yedek geçişinde kendiliğinden açılmaz.
-                if (autoOpen) openInWindow(res.url);
+                // Dizide yalnızca dizi sayfasının bulunması bölümün bulunduğunu göstermez.
+                if (autoOpen && (!info.isTV || res.exact)) openInWindow(res.url);
             };
             timeoutId = setTimeout(() => finish({ ok: false, error: 'zaman aşımı' }), 20000);
             try {
@@ -964,8 +905,12 @@
             clearTimeout(timeoutId);
             for (let step = 1; step < sources.length; step++) {
                 const index = (current + step) % sources.length;
-                if (attempted.has(index) || vidsrcNotFound.has(sources[index].url)) continue;
+                if (sources[index].external || attempted.has(index) || unavailableSources.has(sources[index].url)) continue;
                 loadSource(index);
+                return;
+            }
+            if (hdfcIndex >= 0 && !attempted.has(hdfcIndex)) {
+                loadSource(hdfcIndex, false, true);
                 return;
             }
             status.textContent = 'Kaynaklar yüklenemedi. Kaynak seçerek yeniden deneyebilirsin.';
@@ -974,21 +919,24 @@
             const index = Number(select.value);
             if (Number.isInteger(index) && index >= 0 && index < sources.length) loadSource(index, true);
         };
-        next.onclick = () => {
-            if (extraCurrent >= 0) loadExtra((extraCurrent + 1) % extras.length);
-            else loadSource((current + 1) % sources.length, true);
-        };
-        if (extraSelect) extraSelect.onchange = () => {
-            const index = Number(extraSelect.value);
-            if (extraSelect.value !== '' && Number.isInteger(index) && index >= 0 && index < extras.length) loadExtra(index);
-        };
+        next.onclick = () => loadSource((current + 1) % sources.length, true);
         // VidSrc, iç oynatıcının mesajlarını (MEDIA_NOT_FOUND dahil) gömen sayfaya iletir.
         function onPlayerMessage(e) {
-            if (closed || extraCurrent >= 0 || e.source !== iframe.contentWindow || e.origin !== VIDSRC_ORIGIN) return;
+            if (closed || e.source !== iframe.contentWindow) return;
             const d = e.data;
             if (!d || typeof d !== 'object') return;
             const src = sources[current];
-            if (!src || src.external || !src.url.startsWith(VIDSRC_ORIGIN + '/')) return;
+            if (!src || src.external) return;
+            // Yalnızca açık iframe'in kendi kökeninden gelen hata kabul edilir.
+            if (e.origin !== new URL(src.url).origin) return;
+            if (d.type === 'MEDIA_NOT_FOUND') {
+                unavailableSources.add(src.url);
+                status.textContent = `${src.name}: içerik bulunamadı, sıradaki kaynak deneniyor…`;
+                automaticFallback();
+                return;
+            }
+            // VidSrc sezon protokolü diğer sağlayıcılara uygulanmaz.
+            if (e.origin !== VIDSRC_ORIGIN) return;
             if (d.type === 'PLAYER_TITLE') {
                 clearTimeout(timeoutId);
             } else if (d.type === 'TV_INFO') {
@@ -1016,12 +964,6 @@
             } else if (d.type === 'TV_STATE') {
                 const ps = Number(d.season), pe = Number(d.episode);
                 if (tv && validSE(ps, pe)) applyEpisode(ps, pe, true);
-            } else if (d.type === 'MEDIA_NOT_FOUND') {
-                vidsrcNotFound.add(src.url);
-                if (jumpedToHdfc || hdfcIndex < 0 || attempted.has(hdfcIndex)) { automaticFallback(); return; }
-                jumpedToHdfc = true;
-                status.textContent = 'VidSrc: içerik bulunamadı, HDFilmCehennemi açılıyor…';
-                loadSource(hdfcIndex, false, true);
             }
         }
         window.addEventListener('message', onPlayerMessage);

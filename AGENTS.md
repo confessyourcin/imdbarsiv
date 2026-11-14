@@ -21,6 +21,7 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 | `background.js` | Servis çalışanı. HDFilmCehennemi çözümleme (`hdfc-resolve`), oynatıcı boyutunda popup (`hdfc-open`), simge tıklaması → `app.html`, güncelleme denetimi (`update-check`, `update-open`), yeniden başlatma sonrası `pendingReload` kontrolü. |
 | `content.js` | Kaynak listesi (`getServers`), modal oynatıcı (`showModal`), yedeğe geçiş, VidSrc `postMessage` dinleyicisi, dizi sezon/bölüm seçicisi. Sonunda `window.IMDbPlayer = { getServers, showModal }` dışa açılır. IMDb düğmeleri yalnızca `imdb.com` üzerinde eklenir. |
 | `styles.css` | Oynatıcı ve IMDb düğme stilleri (yalnızca `.vidsrc-*` sınıfları). |
+| `vidsrc-mov-relay.js` | VidSrc.mov içindeki vidsrc.sh iframe'inin doğrulanmış `MEDIA_NOT_FOUND` mesajını üst oynatıcıya aktarır. |
 | `app.html` / `app.js` / `app.css` | Arşiv sayfası. `content.js`'i normal betik olarak yükleyip `window.IMDbPlayer`'ı kullanır. |
 | `app-preferences.js` | Arşivde TR/EN ve aydınlık/karanlık tema seçimi; ilk kullanımda EN/karanlık. |
 | `turkish-metadata.js` | TMDB üzerinden seçilen dilde ad/açıklama; dizi adı özgün kalır, hata veya boş alanda IMDb verisi korunur. |
@@ -34,14 +35,14 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 ## Mimari notlar
 
 - **Kaynak sırası tek yerde:** `getServers(imdbId, isTV, season, episode)` → `getEmbedServers` (VidSrc, VAPlayer, IMDb Player, VidSrc.mov) + en sonda HDFilmCehennemi girdisi. HDFC girdisi `external: { imdbId, isTV, season, episode }` taşır. Oynatıcı dizi bilgisini (sezon/bölüm seçici) **bu alandan** okur. Kaynak eklerken HDFC girdisinin sonda kalması ve `external` alanı korunmalı.
-- **Servers listesi:** `EXTRA_SERVERS` / `getExtraServers` ana sıradan ayrıdır; oynatıcıda ayrı açılır listede, yalnızca elle seçilir (`extraCurrent`, `loadExtra`). Otomatik yedeğe ve `attempted`'a girmez. VidSrc aynalarını buraya ekleme.
+- **Ek sağlayıcılar:** `EXTRA_SERVERS` / `getExtraServers`, `getServers` içinde ana iframe kaynaklarının arkasına, HDFC'nin önüne eklenir. Tek Kaynak menüsü ve ortak `attempted` kümesi kullanılır. Ayrı `extraCurrent`/`loadExtra` akışı yoktur. VidSrc aynalarını buraya ekleme.
 - **Diziler:** sezon ve bölüm ya birlikte verilir ya hiç verilmez. Yalnız biri verilirse `getEmbedServers` `[]` döner.
 - **Modal oynatıcı (`showModal`)** kapanış (closure) değişkenleriyle çalışır: `current`, `attempted`, `generation` (eski olayları elemek için belirteç), `jumpedToHdfc`, `vidsrcLive`, `pendingSet`. Asenkron geri çağrılarda her zaman `closed` ve `token === generation` denetle. Aynı anda tek overlay açılır.
 - **VidSrc mesaj protokolü:** `vidsrc.sh` embed sayfası iç oynatıcının mesajlarını gömen sayfaya iletir. Dinleyici `e.origin === 'https://vidsrc.sh'` ve `e.source === iframe.contentWindow` denetler.
   - **Gelen mesajlar:** `PLAYER_TITLE`, `TV_INFO` (`{eps: {"1":[1,2,…]}, season, episode}`, video başlayınca gelir), `TV_STATE`, `MEDIA_NOT_FOUND`.
   - **Giden mesaj:** `TV_SET {season, episode}`. 4 sn içinde onaylanmazsa kaynak yeniden yüklenir.
   - **Doğrulama:** dışarıdan gelen tüm sayıları `validSE` ile denetle.
-- **"Media not found":** HDFC'ye modal başına **bir kez** sıçranır, sonra normal yedek sırası işler. Bilinen "bulunamadı" adresleri `vidsrcNotFound` içinde tutulur.
+- **"Media not found":** Açık iframe'den, sağlayıcının tam kökeni doğrulanarak gelen `MEDIA_NOT_FOUND`, sıradaki denenmemiş iframe kaynağına geçirir. Önce bütün iframe kaynakları, en son HDFC denenir; doğrudan HDFC'ye sıçrama yoktur. Bilinen bulunamadı adresleri `unavailableSources` içinde tutulur. Bütün kaynaklar tükenince döngü durur. İç hatasını bildirmeyen iframe'lerde video hatasının algılanması garanti değildir.
 - **Arka plan mesajları:** her `onMessage` dinleyicisi `sender.id === chrome.runtime.id` denetler. Asenkron yanıt veren dal `return true` döndürür. Birden fazla dinleyici var; kendi türün değilse hiçbir şey döndürme.
 - **Güncelleyici:**
   - **Uzak veri:** önce `api.github.com/repos/<repo>/commits/main` ile son commit kimliği (SHA) alınır, sonra yalnızca o commit'teki `manifest.json`'un `version` alanı okunur ve sayısal karşılaştırılır (`1.10.0 > 1.9.0`). Dal adresini (`raw…/main/…`) doğrudan kullanma: CDN ~5 dk eski içerik verir ve `?t=` gibi sorgu dizelerini yok sayar. API'ye ulaşılamazsa dal adresine düşülür.
