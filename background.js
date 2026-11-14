@@ -301,9 +301,9 @@ async function checkForUpdate(force) {
     };
 }
 
-function openUpdatePage(params) {
+function openUpdatePage(params, active) {
     const q = new URLSearchParams(params || {}).toString();
-    return chrome.tabs.create({ url: chrome.runtime.getURL('update.html') + (q ? '?' + q : '') });
+    return chrome.tabs.create({ url: chrome.runtime.getURL('update.html') + (q ? '?' + q : ''), active: active !== false });
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -317,6 +317,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'update-open') {
         const to = isValidVersion(msg.version) ? msg.version : '';
         openUpdatePage(to ? { to } : {}).then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
+        return true;
+    }
+    if (msg.type === 'update-start') {
+        const to = isValidVersion(msg.version) ? msg.version : '';
+        openUpdatePage({ ...(to ? { to } : {}), auto: '1', banner: '1' }, false)
+            .then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
         return true;
     }
 });

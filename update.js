@@ -147,6 +147,12 @@
             setError(msg);
             btn.disabled = false;
             $('reselect').disabled = false;
+            if (params.get('banner') === '1' && (phase === 'permission' || phase === 'picker')) {
+                try {
+                    const tab = await chrome.tabs.getCurrent();
+                    if (tab && Number.isInteger(tab.id)) await chrome.tabs.update(tab.id, { active: true });
+                } catch (e) { /* sayfa öne alınamadı */ }
+            }
         } finally {
             busy = false;
         }

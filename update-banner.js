@@ -120,10 +120,20 @@
         x.onclick = hideOnThisPage;
         no.onclick = hideOnThisPage;
         yes.onclick = async () => {
-            const res = await send({ type: 'update-open', version: info.latest });
-            if (res && res.ok) { remove(); return; }
-            p.textContent = 'Eklenti yeniden yüklenmiş görünüyor. Bu sayfayı yenileyip tekrar dene.';
-            yes.remove();
+            yes.disabled = true;
+            yes.textContent = 'Başlatılıyor…';
+            p.textContent = 'Güncelleme başlatılıyor…';
+            const res = await send({ type: 'update-start', version: info.latest });
+            if (res && res.ok) {
+                p.textContent = 'Güncelleniyor… Bu sayfayı işlem bitene kadar açık tut.';
+                yes.remove();
+                no.remove();
+                notes.remove();
+                return;
+            }
+            p.textContent = 'Güncelleme başlatılamadı. Sayfayı yenileyip tekrar dene.';
+            yes.disabled = false;
+            yes.textContent = 'Tekrar dene';
         };
     }
 
