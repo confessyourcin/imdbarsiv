@@ -95,6 +95,11 @@
         if (dir) {
             phase = 'permission';
             let perm = await dir.queryPermission({ mode: 'readwrite' });
+            if (perm !== 'granted' && params.get('banner') === '1' && params.get('auto') === '1') {
+                const err = new Error('Devam etmek için aşağıdaki “Şimdi güncelle” düğmesine basıp klasör iznini onayla.');
+                err.name = 'PermissionRequiredError';
+                throw err;
+            }
             if (perm !== 'granted') perm = await dir.requestPermission({ mode: 'readwrite' });
             if (perm !== 'granted') {
                 const err = new Error('Klasöre yazma izni verilmedi.');
@@ -106,6 +111,11 @@
             // (Aynı tıklamada seçici açılmaz; izin istemi tıklama etkinliğini tüketmiş olabilir.)
             try { await U.forgetDir(); } catch (e) { /* yok */ }
             throw new Error('Kayıtlı klasör artık bu eklentinin yüklendiği klasör değil. Doğru klasörü “Klasörü yeniden seç” ile seç.');
+        }
+        if (params.get('banner') === '1' && params.get('auto') === '1') {
+            const err = new Error('Klasör seçimi için güncelleme sayfasındaki düğmeyi kullan.');
+            err.name = 'SetupRequiredError';
+            throw err;
         }
         return pickFolder();
     }
@@ -139,7 +149,11 @@
             setTimeout(() => reloadInto(pkg.version), 800);
         } catch (e) {
             setProgress('');
-            const msg = e && e.name === 'AbortError' && phase === 'picker' ? 'Klasör seçimi iptal edildi.'
+            const msg = e && e.name === 'PermissionRequiredError'
+                ? 'Devam etmek için “Şimdi güncelle”ye basıp klasöre yazma iznini onayla.'
+                : e && e.name === 'SetupRequiredError'
+                    ? 'İlk kullanım için “Şimdi güncelle”ye basıp eklenti klasörünü seç ve yazma iznini onayla.'
+                : e && e.name === 'AbortError' && phase === 'picker' ? 'Klasör seçimi iptal edildi.'
                 : e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') && (phase === 'permission' || phase === 'picker')
                     ? 'Klasöre yazma izni verilmedi. “Şimdi güncelle”ye yeniden basıp izni onayla.'
                 : 'Güncellenemedi: ' + (e && e.message || e)

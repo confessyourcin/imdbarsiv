@@ -125,7 +125,7 @@
             p.textContent = 'Güncelleme başlatılıyor…';
             const res = await send({ type: 'update-start', version: info.latest });
             if (res && res.ok) {
-                p.textContent = 'Güncelleniyor… Bu sayfayı işlem bitene kadar açık tut.';
+                p.textContent = 'Güncelleme başlatıldı. İzin veya klasör seçimi gerekiyorsa açılan güncelleme sayfasında tamamla.';
                 yes.remove();
                 no.remove();
                 notes.remove();
