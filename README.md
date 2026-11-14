@@ -18,7 +18,7 @@ IMDb sayfalarına oynatıcı ekleyen ve kendi film/dizi arşivi sayfası olan bi
 
 ## Dil ve görünüm
 
-Arşiv sayfası ilk açılışta **TR** ve karanlık temayla başlar. Sağ üstteki **TR / EN** düğmeleri içerik ve arayüz dilini, güneş/ay düğmesi temayı değiştirir. Son seçimin bu tarayıcıda saklanır.
+Arşiv sayfası ilk açılışta **EN** ve karanlık temayla başlar. Sağ üstteki **TR / EN** düğmeleri içerik ve arayüz dilini, güneş/ay düğmesi temayı değiştirir. Son seçimin bu tarayıcıda saklanır.
 
 Dizi adları özgün dilinde kalır. Film adları ve açıklamalar TMDB'den seçilen dilde alınır; tür adları TR seçiliyken yerelde Türkçeleştirilir. TMDB yanıt vermezse, hata döndürürse veya ilgili alan boşsa mevcut IMDb adı ve açıklaması korunur. TMDB için ayrı bir ayar ekranı yoktur; varsayılan API anahtarı kodda tanımlıdır.
 

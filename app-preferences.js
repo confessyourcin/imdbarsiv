@@ -2,7 +2,7 @@
     'use strict';
     function read(key, fallback) { try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; } }
     function save(key, value) { try { localStorage.setItem(key, value); } catch (e) { /* oturumda uygula */ } }
-    const language = read('imdb-archive:language', 'tr') === 'en' ? 'en' : 'tr';
+    const language = read('imdb-archive:language', 'en') === 'tr' ? 'tr' : 'en';
     let theme = read('imdb-archive:theme', 'dark') === 'light' ? 'light' : 'dark';
     const t = (tr, en) => language === 'en' ? en : tr;
     document.documentElement.lang = language;

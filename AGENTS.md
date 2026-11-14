@@ -22,7 +22,7 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 | `content.js` | Kaynak listesi (`getServers`), modal oynatıcı (`showModal`), yedeğe geçiş, VidSrc `postMessage` dinleyicisi, dizi sezon/bölüm seçicisi. Sonunda `window.IMDbPlayer = { getServers, showModal }` dışa açılır. IMDb düğmeleri yalnızca `imdb.com` üzerinde eklenir. |
 | `styles.css` | Oynatıcı ve IMDb düğme stilleri (yalnızca `.vidsrc-*` sınıfları). |
 | `app.html` / `app.js` / `app.css` | Arşiv sayfası. `content.js`'i normal betik olarak yükleyip `window.IMDbPlayer`'ı kullanır. |
-| `app-preferences.js` | Arşivde TR/EN ve aydınlık/karanlık tema seçimi; ilk kullanımda TR/karanlık. |
+| `app-preferences.js` | Arşivde TR/EN ve aydınlık/karanlık tema seçimi; ilk kullanımda EN/karanlık. |
 | `turkish-metadata.js` | TMDB üzerinden seçilen dilde ad/açıklama; dizi adı özgün kalır, hata veya boş alanda IMDb verisi korunur. |
 | `banner-update.js` | Arşiv bannerında doğrudan izin isteme, paket doğrulama/yazma ve yeniden başlatma. |
 | `update-banner.js` | Tüm `imdb.com` sayfalarında ve arşivde "Güncellensin mi?" kartı (gölge DOM). |
