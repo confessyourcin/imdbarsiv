@@ -10,6 +10,9 @@
     const self = chrome.runtime.getManifest();
     const installed = self.version;
     $('foot-ver').textContent = installed;
+    let savedDir = null;
+    let savedDirReady = false;
+    const savedDirPromise = U.getSavedDir().then((dir) => { savedDir = dir; }).catch(() => {}).finally(() => { savedDirReady = true; });
 
     function only(id) {
         for (const s of ['state-check', 'state-update', 'state-done', 'state-failed']) $(s).hidden = s !== id;
@@ -85,22 +88,35 @@
             throw new Error('Seçilen klasör, Chrome\'un bu eklentiyi yüklediği klasör değil (başka bir kopya olabilir). Eklentiler sayfasında Ayrıntılar → Kaynak satırındaki klasörü “Klasörü yeniden seç” ile seç.');
         }
         try { await U.saveDir(dir); } catch (e) { /* bir dahaki sefere yeniden sorulur */ }
+        savedDir = dir;
         return dir;
     }
 
-    async function getFolder(forcePick) {
+    async function getFolder(forcePick, backgroundAuto) {
         if (forcePick) return pickFolder();
-        let dir = null;
-        try { dir = await U.getSavedDir(); } catch (e) { dir = null; }
+        // Klasör tanıtıcısını sayfa açılırken yükle; tıklama sırasında IndexedDB beklemek,
+        // requestPermission için gereken kullanıcı etkinliğini tüketebilir.
+        if (!savedDirReady) {
+            const err = new Error('Klasör bilgisi henüz yüklenmedi. Birkaç saniye sonra yeniden dene.');
+            err.name = 'DirectoryNotReadyError';
+            throw err;
+        }
+        const dir = savedDir;
         if (dir) {
             phase = 'permission';
-            let perm = await dir.queryPermission({ mode: 'readwrite' });
-            if (perm !== 'granted' && params.get('banner') === '1' && params.get('auto') === '1') {
-                const err = new Error('Devam etmek için aşağıdaki “Şimdi güncelle” düğmesine basıp klasör iznini onayla.');
-                err.name = 'PermissionRequiredError';
-                throw err;
+            let perm;
+            if (backgroundAuto) {
+                perm = await dir.queryPermission({ mode: 'readwrite' });
+                if (perm !== 'granted') {
+                    const err = new Error('Devam etmek için aşağıdaki “Şimdi güncelle” düğmesine basıp klasör iznini onayla.');
+                    err.name = 'PermissionRequiredError';
+                    throw err;
+                }
+            } else {
+                // Bu çağrı, tıklama olayından önce herhangi bir await olmadan yapılmalı.
+                const permissionRequest = dir.requestPermission({ mode: 'readwrite' });
+                perm = await permissionRequest;
             }
-            if (perm !== 'granted') perm = await dir.requestPermission({ mode: 'readwrite' });
             if (perm !== 'granted') {
                 const err = new Error('Klasöre yazma izni verilmedi.');
                 err.name = 'NotAllowedError';
@@ -110,9 +126,10 @@
             // Kayıtlı klasör artık Chrome'un yüklediği klasör değil: unut, yeni seçim iste.
             // (Aynı tıklamada seçici açılmaz; izin istemi tıklama etkinliğini tüketmiş olabilir.)
             try { await U.forgetDir(); } catch (e) { /* yok */ }
+            savedDir = null;
             throw new Error('Kayıtlı klasör artık bu eklentinin yüklendiği klasör değil. Doğru klasörü “Klasörü yeniden seç” ile seç.');
         }
-        if (params.get('banner') === '1' && params.get('auto') === '1') {
+        if (backgroundAuto) {
             const err = new Error('Klasör seçimi için güncelleme sayfasındaki düğmeyi kullan.');
             err.name = 'SetupRequiredError';
             throw err;
@@ -121,8 +138,12 @@
     }
 
     let busy = false;
-    async function runUpdate(info, forcePick) {
+    async function runUpdate(info, forcePick, backgroundAuto) {
         if (busy) return;
+        if (!savedDirReady && !forcePick) {
+            setError('Klasör bilgisi yükleniyor. Birkaç saniye sonra yeniden dene.');
+            return;
+        }
         busy = true;
         const btn = $('do-update');
         btn.disabled = true;
@@ -131,7 +152,7 @@
         phase = '';
         try {
             // forcePick: "Klasörü yeniden seç" — seçici, tıklamanın ilk adımı olarak hemen açılır.
-            const dir = await getFolder(forcePick);
+            const dir = await getFolder(forcePick, backgroundAuto);
             phase = 'download';
             setProgress('Yeni sürüm indiriliyor…');
             const res = await fetch(info.zipUrl, { cache: 'no-store', credentials: 'omit' });
@@ -153,6 +174,8 @@
                 ? 'Devam etmek için “Şimdi güncelle”ye basıp klasöre yazma iznini onayla.'
                 : e && e.name === 'SetupRequiredError'
                     ? 'İlk kullanım için “Şimdi güncelle”ye basıp eklenti klasörünü seç ve yazma iznini onayla.'
+                : e && e.name === 'DirectoryNotReadyError'
+                    ? 'Klasör bilgisi yüklenemedi. Birkaç saniye sonra yeniden dene.'
                 : e && e.name === 'AbortError' && phase === 'picker' ? 'Klasör seçimi iptal edildi.'
                 : e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') && (phase === 'permission' || phase === 'picker')
                     ? 'Klasöre yazma izni verilmedi. “Şimdi güncelle”ye yeniden basıp izni onayla.'
@@ -176,11 +199,19 @@
         only('state-update');
         $('ver-from').textContent = info.current;
         $('ver-to').textContent = info.latest;
-        $('do-update').onclick = () => runUpdate(info, false);
-        $('reselect').onclick = () => runUpdate(info, true);
+        const updateButton = $('do-update');
+        const reselectButton = $('reselect');
+        updateButton.disabled = !savedDirReady;
+        reselectButton.disabled = !savedDirReady;
+        savedDirPromise.then(() => {
+            updateButton.disabled = false;
+            reselectButton.disabled = false;
+        });
+        updateButton.onclick = () => runUpdate(info, false);
+        reselectButton.onclick = () => runUpdate(info, true);
         document.title = `Güncelleme ${info.latest} · IMDb Arşiv`;
         // Başarısız sayfasında klasör yeniden seçildiyse güncelleme kendiliğinden başlar.
-        if (params.get('auto') === '1') runUpdate(info, false);
+        if (params.get('auto') === '1') savedDirPromise.then(() => runUpdate(info, false, params.get('banner') === '1'));
     }
 
     async function check(force) {
