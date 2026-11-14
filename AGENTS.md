@@ -24,6 +24,7 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 | `app.html` / `app.js` / `app.css` | Arşiv sayfası. `content.js`'i normal betik olarak yükleyip `window.IMDbPlayer`'ı kullanır. |
 | `app-preferences.js` | Arşivde TR/EN ve aydınlık/karanlık tema seçimi; ilk kullanımda EN/karanlık. |
 | `turkish-metadata.js` | TMDB üzerinden seçilen dilde ad/açıklama; dizi adı özgün kalır, hata veya boş alanda IMDb verisi korunur. |
+| `tvmaze-episodes.js` | Arşiv oynatıcısında IMDb sezon/bölüm listesi alınamazsa TVmaze yedeği; bir saat önbellek. VidSrc listesi önceliklidir. |
 | `banner-update.js` | Arşiv bannerında doğrudan izin isteme, paket doğrulama/yazma ve yeniden başlatma. |
 | `update-banner.js` | Tüm `imdb.com` sayfalarında ve arşivde "Güncellensin mi?" kartı (gölge DOM). |
 | `update.html` / `update.js` / `update.css` | Güncelleme sayfası: klasör izni, indirme, yazma, yeniden başlatma. |
@@ -33,6 +34,7 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 ## Mimari notlar
 
 - **Kaynak sırası tek yerde:** `getServers(imdbId, isTV, season, episode)` → `getEmbedServers` (VidSrc, VAPlayer, IMDb Player, VidSrc.mov) + en sonda HDFilmCehennemi girdisi. HDFC girdisi `external: { imdbId, isTV, season, episode }` taşır. Oynatıcı dizi bilgisini (sezon/bölüm seçici) **bu alandan** okur. Kaynak eklerken HDFC girdisinin sonda kalması ve `external` alanı korunmalı.
+- **Servers listesi:** `EXTRA_SERVERS` / `getExtraServers` ana sıradan ayrıdır; oynatıcıda ayrı açılır listede, yalnızca elle seçilir (`extraCurrent`, `loadExtra`). Otomatik yedeğe ve `attempted`'a girmez. VidSrc aynalarını buraya ekleme.
 - **Diziler:** sezon ve bölüm ya birlikte verilir ya hiç verilmez. Yalnız biri verilirse `getEmbedServers` `[]` döner.
 - **Modal oynatıcı (`showModal`)** kapanış (closure) değişkenleriyle çalışır: `current`, `attempted`, `generation` (eski olayları elemek için belirteç), `jumpedToHdfc`, `vidsrcLive`, `pendingSet`. Asenkron geri çağrılarda her zaman `closed` ve `token === generation` denetle. Aynı anda tek overlay açılır.
 - **VidSrc mesaj protokolü:** `vidsrc.sh` embed sayfası iç oynatıcının mesajlarını gömen sayfaya iletir. Dinleyici `e.origin === 'https://vidsrc.sh'` ve `e.source === iframe.contentWindow` denetler.

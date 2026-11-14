@@ -2,7 +2,24 @@
 
 Bu dosya sürüm sürüm teknik kararları ve doğrulama notlarını tutar. Kullanıcı rehberi için README.md.
 
+## 1.9.7: Servers listesi
+
+Oynatıcı araç çubuğunda **Kaynak** listesinin yanında ayrı bir **Servers** listesi var (`EXTRA_SERVERS`, `getExtraServers` → `content.js`). Ana kaynak sırasına (`getServers`), `attempted` kümesine ve otomatik yedek geçişine girmez; zaman aşımı yok, yalnızca elle seçilir. Ek sunucu açıkken "Yedek kaynağa geç" sıradaki ek sunucuya gider, Kaynak listesinden seçim yapılınca Servers sıfırlanır. Dizide bölüm değişince seçili ek sunucu yeni bölüm adresiyle yeniden yüklenir. Ek sunucu açıkken VidSrc mesajları yok sayılır (`extraCurrent >= 0`). Liste HDFC girdisinin `external` alanından (IMDb kimliği, film/dizi) üretilir; HDFC girdisi yoksa liste görünmez.
+
+Seçim: XXIKU'nun embed listesindeki 46 adres (40 alan adı) IMDb kimliğiyle, imdb.com kökenli bir sayfada iframe içinde Playwright ile denendi (Lupin S1B1 `tt2531336`; film `tt0111161`). Ölçüt: iframe içindeki `<video>` `currentTime` ilerliyor.
+
+- **Eklendi (dizide oynadı):** braflix.dev, nxsha.space, embedmaster.link, vidcore.io, vixsrc.to, vidsrc.party, vidsrc.buzz, embedbandit.com, vidzen.fun. Film adresi tarayıcıda oynadı: braflix, nxsha, embedmaster, vidcore, vixsrc, vidsrc.party; vidsrc.buzz film sayfası başlığı doğru döndü (statik); embedbandit ve vidzen film adresi tarayıcıda doğrulanmadı (HTTP 200).
+- **VidSrc adlı/aynası, eklenmedi:** vidsrc.me (vidsrc.sh'e yönlenir), vidsrc.ir, vidsrc2.ru, player.videasy.ws (vidsrc.sh ile aynı sayfa); embed.vidsrc.pk VixSrc'nin yayınını kullanıyor (`vixsrc.to/storage/enc.key`, `*.velvetvalley50.boats` HLS), VixSrc zaten listede.
+- **VidSrc adlı ama ayrı (ağ trafiğiyle denendi, Lupin S1B1):** vidsrc.sh videoyu `hazelandhoney.space` / `stellarconductornexus.com` üzerinden çekiyor. vidsrc.party tüm istekleri kendi alan adı üzerinden yapıyor (arka ucu görünmüyor, vidsrc.sh sunucularına doğrudan istek yok); vidsrc.buzz `relay.videm.buzz` kullanıyor. İkisi de eklendi. web.nxsha.app = nxsha.space.
+- **Eklenmedi:** watch.embed-api.stream (oynadı ama `beforeunload` iletişim kutusu açıyor; vidzee sarmalayıcısı), vidly.pro (yalnız TMDB kimliği), vidcore.org/vidspark.to (moviesapi.vip çerçeveyi reddediyor), vidplayer.cc (çerçeveyi reddediyor), player.vidzee.wtf ve vidbolt.pro (tıklamada reklama gidiyor), cinesrc.st, movietvapi.stream, cinextream.cc, player.cinezo.live, vidstorm.to, ishowstream.cc, player.embedheaven.st, vidy.st, vidfast.vc, filesun.sbs, embed.cinelite.xyz, play.xpass.top, zoryva.me, framextv.cc, player.vidmario.net (hata, 404 ya da kaynak bulunamadı), rivestream.ru (embed değil, site sayfası).
+
+Gerçek eklentide (chrome://extensions) ve arşiv sayfasında denenmedi; sahte imdb.com sayfasında `content.js` ile seçim, bölüm değişimi, "Yedek kaynağa geç", Kaynak'a dönüş, 17 sn zaman aşımı olmaması ve 375 px'te taşma olmaması kontrol edildi.
+
 ## Güncel arşiv değişiklikleri
+
+- `tvmaze-episodes.js`, yalnızca arşiv oynatıcısında IMDb listesi alınamadığında yedektir. IMDb kimliği doğrulanır; gerçek sezon/bölüm numaraları kullanılır, sayımdan tahmini aralık üretilmez. Bir saat önbellek ve eşzamanlı istek birleştirme vardır. Geç gelen yanıtlar kapanmış modalı veya VidSrc listesini ezmez. TMDB sezon verisi kullanılmaz.
+
+- Arşiv oynatıcısında veri beklenirken tahmini S1–S20/B1–B30 listeleri gösterilmez (`knownEpisodesOnly`). Liste mevcut IMDb veya VidSrc verisiyle dolar; veri yokken yalnızca mevcut seçim görünür ve tahmini sonraki bölüme geçilmez. IMDb sayfasının modal çağrıları değişmedi; TMDB sezon kaynağı eklenmedi.
 
 - `app-preferences.js`: ilk kullanımda EN/karanlık tema; sağ üstte tema ve TR/EN seçimi. Tercihler `localStorage` içinde saklanır.
 - `turkish-metadata.js`: TMDB `find` isteğinde `tr-TR` veya `en-US`; dizi için `original_name`, film için çevrilmiş `title`. Önce IMDb verisi kopyalanır, yalnızca dolu TMDB alanları bunun üzerine eklenir. Ağ/HTTP/ayrıştırma hatasında IMDb verisi korunur. Türler TR seçiliyken yerel sözlükle çevrilir.

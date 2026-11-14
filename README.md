@@ -8,6 +8,7 @@ IMDb sayfalarına oynatıcı ekleyen ve kendi film/dizi arşivi sayfası olan bi
 
 - **IMDb sayfasında oynat** — Film ve dizi sayfalarına *Play* düğmesi ve kaynak menüsü eklenir. Oynatıcı aynı sayfada açılır.
 - **Yedek kaynaklar** — VidSrc, VidAPI / VAPlayer, IMDb Player, VidSrc.mov. Bir kaynak açılmazsa sıradakine geçilir.
+- **Servers listesi** — Oynatıcıda ayrı bir açılır liste: Braflix, Nxsha, EmbedMaster, VidCore, VixSrc, VidSrc.party, VidSrc.buzz, EmbedBandit, VidZen. Yalnızca elle seçilir; otomatik yedek geçişine girmez. Dizide bölüm değişince seçili sunucu yeni bölümle açılır.
 - **"Media not found" olunca HDFilmCehennemi** — VidSrc içeriği bulamazsa kaynak kendiliğinden HDFilmCehennemi'ye geçer ve oynatıcı boyutunda bir pencerede açılır. Site kendi oynatıcısının başka sayfalara gömülmesine izin vermediği için ayrı pencere kullanılır.
 - **Sezon / bölüm seçici** — Dizilerde oynatıcı panelinde Sezon, Bölüm ve *Sonraki bölüm ›* düğmesi bulunur.
 - **IMDb Arşivi sayfası** — Araç çubuğundaki eklenti simgesine tıkla:
@@ -17,6 +18,8 @@ IMDb sayfalarına oynatıcı ekleyen ve kendi film/dizi arşivi sayfası olan bi
 - **Otomatik güncelleme bildirimi** — GitHub'da yeni sürüm çıkınca IMDb'ye girdiğinde "Güncellensin mi?" diye sorar; tek tıkla güncellenir.
 
 ## Dil ve görünüm
+
+Arşiv oynatıcısında sezon/bölüm listesi önce IMDb'den alınır. IMDb verisi boşsa veya alınamazsa IMDb kimliğiyle TVmaze denenir; VidSrc'nin gönderdiği gerçek liste her zaman önceliklidir. TVmaze yanıtı bir saat önbellekte tutulur; farklı kaynakların sezon düzenleri birleştirilmez. TVmaze bölüm verisi [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) lisanslıdır; kaynak: [TVmaze](https://www.tvmaze.com/). Yeni bölümün listelenmesi oynatıcıda hazır olduğunu garanti etmez.
 
 Arşiv sayfası ilk açılışta **EN** ve karanlık temayla başlar. Sağ üstteki **TR / EN** düğmeleri içerik ve arayüz dilini, güneş/ay düğmesi temayı değiştirir. Son seçimin bu tarayıcıda saklanır.
 
@@ -66,10 +69,11 @@ Neden tamamen sessiz değil? Chrome, Web Mağazası dışından elle yüklenen e
 | `hdfilmcehennemi.nl` | HDFilmCehennemi'de IMDb kimliğiyle arama |
 | `codeload.github.com` | Güncelleme zip'ini indirme |
 | `api.themoviedb.org` | Kullanıcı TMDB API anahtarı eklerse Türkçe ad ve açıklamaları alma |
+| `api.tvmaze.com` | Arşiv oynatıcısında IMDb sezon/bölüm listesi alınamazsa yedek bölüm verisi |
 | `storage` | Güncelleme denetim zamanı ve "sonra" tercihi |
 | `activeTab` | Etkin sekmede çalışma |
 
-Eklenti kişisel veri toplamaz. İzlemek istediğin başlığın IMDb kimliği, oynatmak için seçilen kaynağa (VidSrc, VAPlayer, IMDb Player, VidSrc.mov) ve HDFilmCehennemi aramasına gider; aramalar IMDb'ye gider. Güncelleme denetimi yalnızca GitHub'dan bu deponun son commit kimliğini ve o commit'teki `manifest.json` dosyasını okur.
+Eklenti kişisel veri toplamaz. İzlemek istediğin başlığın IMDb kimliği, oynatmak için seçilen kaynağa (VidSrc, VAPlayer, IMDb Player, VidSrc.mov ya da Servers listesinden seçilen sunucu) ve HDFilmCehennemi aramasına gider; aramalar IMDb'ye gider. Güncelleme denetimi yalnızca GitHub'dan bu deponun son commit kimliğini ve o commit'teki `manifest.json` dosyasını okur.
 
 ## Yeni sürüm yayınlama (geliştirici için)
 

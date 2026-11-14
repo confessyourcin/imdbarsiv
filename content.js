@@ -40,6 +40,35 @@
         ];
     }
 
+    // Oynatıcıdaki ayrı "Servers" listesi. Ana kaynak sırasına ve otomatik yedek
+    // geçişine girmez; yalnızca elle seçilir. vidsrc.sh aynaları (vidsrc.me/.ir, vidsrc2.ru,
+    // videasy.ws) ve VixSrc'nin yayınını kullanan vidsrc.pk bilinçli olarak yok. VidSrc.party ve
+    // VidSrc.buzz adı benzese de videoyu vidsrc.sh'ten farklı sunuculardan çeker (ağ trafiğiyle denendi). Hepsi IMDb kimliğiyle denendi (NOTLAR.md, 1.9.7).
+    const EXTRA_SERVERS = [
+        { name: 'Braflix', movie: 'https://braflix.dev/embed/movie/{id}', tv: 'https://braflix.dev/embed/tv/{id}/{s}/{e}' },
+        { name: 'Nxsha', movie: 'https://nxsha.space/embed/movie/{id}', tv: 'https://nxsha.space/embed/tv/{id}/{s}/{e}' },
+        { name: 'EmbedMaster', movie: 'https://embedmaster.link/movie/{id}', tv: 'https://embedmaster.link/tv/{id}/{s}/{e}' },
+        { name: 'VidCore', movie: 'https://vidcore.io/movie/{id}', tv: 'https://vidcore.io/tv/{id}/{s}/{e}' },
+        { name: 'VixSrc', movie: 'https://vixsrc.to/movie/{id}', tv: 'https://vixsrc.to/tv/{id}/{s}/{e}' },
+        { name: 'VidSrc.party', movie: 'https://www.vidsrc.party/embed/movie/{id}', tv: 'https://www.vidsrc.party/embed/tv/{id}/{s}/{e}' },
+        { name: 'VidSrc.buzz', movie: 'https://vidsrc.buzz/embed/movie/{id}', tv: 'https://vidsrc.buzz/embed/tv/{id}/{s}/{e}' },
+        { name: 'EmbedBandit', movie: 'https://embedbandit.com/embed/movie/{id}', tv: 'https://embedbandit.com/embed/tv/{id}/{s}/{e}' },
+        { name: 'VidZen', movie: 'https://vidzen.fun/movie/{id}', tv: 'https://vidzen.fun/tv/{id}/{s}/{e}' }
+    ];
+
+    // Dizide sezon/bölüm yoksa 1. sezon 1. bölüm açılır.
+    function getExtraServers(imdbId, isTV, season, episode) {
+        if (!/^tt\d+$/.test(imdbId)) return [];
+        // getEmbedServers ile aynı kural: sezon ve bölüm birlikte verilir ya da hiç verilmez.
+        if (isTV && ((season === undefined || season === null || season === '') !== (episode === undefined || episode === null || episode === ''))) return [];
+        const s = isTV ? String(season || 1) : '', e = isTV ? String(episode || 1) : '';
+        if (isTV && (!/^[1-9]\d*$/.test(s) || !/^[1-9]\d*$/.test(e))) return [];
+        return EXTRA_SERVERS.map(server => ({
+            name: server.name,
+            url: (isTV ? server.tv : server.movie).replace('{id}', imdbId).replace('{s}', s).replace('{e}', e)
+        }));
+    }
+
     function getPageServers(imdbId, isTV) {
         if (isTV) {
             const season = document.querySelector('.vidsrc-season-select') || document.querySelector('.vidsrc-season-select-secondary');
@@ -470,8 +499,8 @@
         if (!info) { info = { seasons: null, eps: {}, source: null }; tvEpisodeCache.set(imdbId, info); }
         return info;
     }
-    async function imdbSeasonList(imdbId) {
-        const res = await fetch(`https://www.imdb.com/title/${imdbId}/episodes/`, { credentials: 'include' });
+    async function imdbSeasonList(imdbId, signal) {
+        const res = await fetch(`https://www.imdb.com/title/${imdbId}/episodes/`, { credentials: 'include', ...(signal ? { signal } : {}) });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
         const nums = Array.from(doc.querySelectorAll('[data-testid="tab-season-entry"], a[href*="episodes/?season="]'))
@@ -479,8 +508,8 @@
             .filter(n => n > 0 && n < 200);
         return [...new Set(nums)].sort((a, b) => a - b);
     }
-    async function imdbEpisodeList(imdbId, season) {
-        const res = await fetch(`https://www.imdb.com/title/${imdbId}/episodes/?season=${season}`, { credentials: 'include' });
+    async function imdbEpisodeList(imdbId, season, signal) {
+        const res = await fetch(`https://www.imdb.com/title/${imdbId}/episodes/?season=${season}`, { credentials: 'include', ...(signal ? { signal } : {}) });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
         const nums = Array.from(doc.querySelectorAll('.ipc-title__text, .episode-item-wrapper h4, article h4'))
@@ -569,8 +598,35 @@
         iframe.className = 'vidsrc-iframe';
         iframe.allowFullscreen = true;
         iframe.allow = "autoplay; encrypted-media";
-        
+
+        // ---- Ayrı "Servers" listesi (ek sağlayıcılar; elle seçilir, otomatik yedeğe girmez) ----
+        const meta = (sources.find(server => server.external) || {}).external || null;
+        let extras = meta ? getExtraServers(meta.imdbId, meta.isTV, meta.season, meta.episode) : [];
+        let extraCurrent = -1;   // >= 0 ise iframe'de ek sunucu açık
+        let extraSelect = null, extraLabel = null;
+        if (extras.length) {
+            extraLabel = document.createElement('label');
+            extraLabel.className = 'vidsrc-source-label';
+            extraLabel.textContent = 'Servers';
+            extraSelect = document.createElement('select');
+            extraSelect.className = 'vidsrc-source-select vidsrc-extra-select';
+            extraSelect.setAttribute('aria-label', 'Ek sunucular');
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Seç…';
+            placeholder.disabled = true;   // ek sunucu açıkken "Seç…" ile boş görünüme düşülmesin
+            extraSelect.appendChild(placeholder);
+            extras.forEach((server, index) => {
+                const option = document.createElement('option');
+                option.value = String(index);
+                option.textContent = server.name;
+                extraSelect.appendChild(option);
+            });
+            extraLabel.appendChild(extraSelect);
+        }
+
         toolbar.appendChild(label);
+        if (extraLabel) toolbar.appendChild(extraLabel);
         toolbar.appendChild(next);
         toolbar.appendChild(close);
         toolbar.appendChild(status);
@@ -626,14 +682,16 @@
         function seasonValues() {
             const info = tvInfo(tv.imdbId);
             const s = tv.season || 1;
-            const list = info.seasons && info.seasons.length ? info.seasons.slice() : rangeTo(Math.max(s, 20));
+            const list = info.seasons && info.seasons.length ? info.seasons.slice()
+                : opts.knownEpisodesOnly ? [s] : rangeTo(Math.max(s, 20));
             if (!list.includes(s)) list.push(s);
             return list.sort((a, b) => a - b);
         }
         function episodeValues(season) {
             const info = tvInfo(tv.imdbId);
             const e = tv.episode || 1;
-            const list = info.eps[season] && info.eps[season].length ? info.eps[season].slice() : rangeTo(Math.max(e, 30));
+            const list = info.eps[season] && info.eps[season].length ? info.eps[season].slice()
+                : opts.knownEpisodesOnly ? [e] : rangeTo(Math.max(e, 30));
             if (!list.includes(e)) list.push(e);
             return list.sort((a, b) => a - b);
         }
@@ -648,7 +706,7 @@
                 if (ns) return { season: ns, episode: (info.eps[ns] && info.eps[ns][0]) || 1 };
                 return null;
             }
-            return { season: s, episode: e + 1 };
+            return opts.knownEpisodesOnly ? null : { season: s, episode: e + 1 };
         }
         function renderEpisodeUi() {
             if (!tv || closed) return;
@@ -659,18 +717,46 @@
         }
         async function ensureEpisodes(season) {
             if (!tv) return;
+            const token = generation;
             const info = tvInfo(tv.imdbId);
+            const active = () => !closed && token === generation && info.source !== 'vidsrc';
             if (info.source === 'vidsrc') return;
             try {
+                if (info.source === 'tvmaze') throw new Error('Yedek listeyi yenile');
                 if (!info.seasons) {
-                    const list = await imdbSeasonList(tv.imdbId);
+                    const list = await imdbSeasonList(tv.imdbId, opts.getEpisodeFallback ? AbortSignal.timeout(8000) : undefined);
+                    if (!active()) return;
                     if (list.length && !info.seasons) { info.seasons = list; info.source = info.source || 'imdb'; }
+                    if (!list.length && opts.getEpisodeFallback) throw new Error('IMDb sezon listesi boş');
                 }
                 if (!info.eps[season]) {
-                    const eps = await imdbEpisodeList(tv.imdbId, season);
+                    const eps = await imdbEpisodeList(tv.imdbId, season, opts.getEpisodeFallback ? AbortSignal.timeout(8000) : undefined);
+                    if (!active()) return;
                     if (eps.length && !info.eps[season]) info.eps[season] = eps;
                 }
-            } catch (err) { /* IMDb'ye ulaşılamadı: sayı aralığı gösterilir */ }
+            } catch (err) { /* Arşivde IMDb alınamazsa aşağıdaki yedek denenir. */ }
+            if (!active()) return;
+            if (typeof opts.getEpisodeFallback === 'function' &&
+                (info.source === 'tvmaze' || !info.seasons || !info.eps[season])) {
+                try {
+                    const data = await opts.getEpisodeFallback(tv.imdbId);
+                    if (!active()) return;
+                    const eps = {};
+                    for (const key of Object.keys(data && data.eps || {})) {
+                        const sn = Number(key);
+                        if (!validSE(sn, 1) || !Array.isArray(data.eps[key])) continue;
+                        const list = [...new Set(data.eps[key].filter(ep => validSE(sn, ep)))].sort((a, b) => a - b);
+                        if (list.length) eps[sn] = list;
+                    }
+                    const seasons = Object.keys(eps).map(Number).sort((a, b) => a - b);
+                    if (seasons.length) {
+                        // Farklı numaralandırmaları birleştirme: yedeğin bütün listesini kullan.
+                        info.seasons = seasons;
+                        info.eps = eps;
+                        info.source = 'tvmaze';
+                    }
+                } catch (err) { /* Yedek de yoksa mevcut seçim korunur. */ }
+            }
             renderEpisodeUi();
         }
         function applyEpisode(season, episode, fromPlayer) {
@@ -693,12 +779,14 @@
                     if (select.options[i]) select.options[i].textContent = server.name;
                 });
             }
+            const freshExtras = getExtraServers(tv.imdbId, true, String(season), String(episode));
+            if (freshExtras.length === extras.length) extras = freshExtras;
             renderEpisodeUi();
             if (fromPlayer) return;   // oynatıcı zaten bu bölümde
-            ensureEpisodes(season);
             jumpedToHdfc = false;
-            const src = sources[current];
             clearPendingSet();
+            if (extraCurrent >= 0) { loadExtra(extraCurrent); return; }
+            const src = sources[current];
             if (vidsrcLive && src && !src.external && src.url.startsWith(VIDSRC_ORIGIN + '/') && iframe.contentWindow) {
                 attempted = new Set([current]);
                 status.textContent = `VidSrc: S${season} B${episode} açılıyor…`;
@@ -733,7 +821,6 @@
             episodeSel.onchange = () => applyEpisode(tv.season || 1, Number(episodeSel.value), false);
             nextEpBtn.onclick = () => { const n = nextEpisode(); if (n) applyEpisode(n.season, n.episode, false); };
             renderEpisodeUi();
-            ensureEpisodes(tv.season || 1);
         }
 
         function loadSource(index, manual = false, autoOpen = manual) {
@@ -742,9 +829,12 @@
             if (manual) attempted = new Set();
             current = index;
             attempted.add(index);
+            extraCurrent = -1;
+            if (extraSelect) extraSelect.value = '';
             select.value = String(index);
             status.textContent = `${sources[index].name} yükleniyor…`;
             const token = ++generation;
+            if (tv) ensureEpisodes(tv.season || 1);
             vidsrcLive = false;
             clearPendingSet();
             if (sources[index].external) {
@@ -765,6 +855,29 @@
                 if (!closed && token === generation) automaticFallback();
             }, 15000);
             iframe.src = sources[index].url;
+        }
+        // Ek sunucu: yalnızca elle seçilir. Zaman aşımı ve otomatik yedek geçişi yok;
+        // ana kaynak sırası (current, attempted) değişmez.
+        function loadExtra(index) {
+            if (closed || !extras[index]) return;
+            clearTimeout(timeoutId);
+            clearPendingSet();
+            vidsrcLive = false;
+            extraCurrent = index;
+            extraSelect.value = String(index);
+            select.selectedIndex = -1;
+            const server = extras[index];
+            const token = ++generation;
+            if (tv) ensureEpisodes(tv.season || 1);
+            status.textContent = `${server.name} yükleniyor…`;
+            extPanel.hidden = true;
+            iframe.hidden = false;
+            iframe.onload = () => {
+                if (closed || token !== generation) return;
+                status.textContent = `${server.name} sayfası açıldı. Oynatılmıyorsa başka sunucu seçebilirsin.`;
+            };
+            iframe.onerror = null;
+            iframe.src = server.url;
         }
         // Oynatıcı alanının görünüm alanındaki yeri (CSS piksel). Ekran koordinatına
         // çevirme arka planda, sekmenin yakınlaştırma oranıyla yapılır.
@@ -861,10 +974,17 @@
             const index = Number(select.value);
             if (Number.isInteger(index) && index >= 0 && index < sources.length) loadSource(index, true);
         };
-        next.onclick = () => loadSource((current + 1) % sources.length, true);
+        next.onclick = () => {
+            if (extraCurrent >= 0) loadExtra((extraCurrent + 1) % extras.length);
+            else loadSource((current + 1) % sources.length, true);
+        };
+        if (extraSelect) extraSelect.onchange = () => {
+            const index = Number(extraSelect.value);
+            if (extraSelect.value !== '' && Number.isInteger(index) && index >= 0 && index < extras.length) loadExtra(index);
+        };
         // VidSrc, iç oynatıcının mesajlarını (MEDIA_NOT_FOUND dahil) gömen sayfaya iletir.
         function onPlayerMessage(e) {
-            if (closed || e.source !== iframe.contentWindow || e.origin !== VIDSRC_ORIGIN) return;
+            if (closed || extraCurrent >= 0 || e.source !== iframe.contentWindow || e.origin !== VIDSRC_ORIGIN) return;
             const d = e.data;
             if (!d || typeof d !== 'object') return;
             const src = sources[current];

@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "IMDb Video Player",
-  "version": "1.9.6",
-  "description": "IMDb video player with VidSrc, VAPlayer, IMDb Player, VidSrc.mov and an HDFilmCehennemi popup fallback, an archive page with IMDb top 10 and search, and in-browser updates from GitHub.",
+  "version": "1.9.8",
+  "description": "IMDb video player with multiple embed sources, a Servers list, HDFilmCehennemi popup fallback and an IMDb archive page.",
   "permissions": [
     "activeTab",
     "storage"
   ],
   "host_permissions": [
+    "https://api.tvmaze.com/*",
     "https://api.themoviedb.org/*",
     "https://www.hdfilmcehennemi.nl/*",
     "https://v3.sg.media-imdb.com/*",

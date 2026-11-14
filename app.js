@@ -138,7 +138,7 @@
         if (!servers.length) { alert('Bu başlık için kaynak oluşturulamadı.'); return; }
         if (playerOpen()) return;
         if (detail.open) detail.close();
-        P.showModal(servers[0].url, servers);
+        P.showModal(servers[0].url, servers, { knownEpisodesOnly: true, getEpisodeFallback: window.ImdbTvmazeEpisodes.get });
     }
 
     // ---------- Görünüm parçaları ----------
