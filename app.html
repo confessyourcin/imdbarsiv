@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IMDb Arşivi</title>
+    <link rel="icon" href="icon.png">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="topbar" id="topbar">
+        <a class="brand" href="#" id="brand" aria-label="Ana sayfa">
+            <span class="brand-logo">IMDb</span>
+            <span class="brand-name">Arşiv</span>
+        </a>
+        <form class="search" id="search-form" role="search" autocomplete="off">
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input id="search-input" type="search" placeholder="Film veya dizi ara (ör. Prison Break)" aria-label="Film veya dizi ara" spellcheck="false">
+            <button type="button" class="search-clear" id="search-clear" aria-label="Aramayı temizle" hidden>×</button>
+        </form>
+    </header>
+
+    <main id="main">
+        <section class="hero" id="hero" aria-live="polite">
+            <div class="hero-bg" id="hero-bg"></div>
+            <div class="hero-shade"></div>
+            <div class="hero-body">
+                <p class="hero-kicker" id="hero-kicker">Yükleniyor…</p>
+                <h1 class="hero-title" id="hero-title">&nbsp;</h1>
+                <p class="hero-meta" id="hero-meta"></p>
+                <p class="hero-desc" id="hero-desc"></p>
+                <div class="hero-actions" id="hero-actions" hidden>
+                    <button type="button" class="btn btn-play" id="hero-play">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                        Oynat
+                    </button>
+                    <button type="button" class="btn btn-ghost" id="hero-info">Ayrıntılar</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="results" id="results" hidden>
+            <div class="section-head">
+                <h2 id="results-title">Sonuçlar</h2>
+                <span class="section-note" id="results-note"></span>
+            </div>
+            <div class="grid" id="results-grid"></div>
+        </section>
+
+        <div id="rows">
+            <section class="row" id="row-movies">
+                <div class="section-head">
+                    <h2 id="row-movies-title">Bugün Top 10 Film</h2>
+                    <span class="section-note" id="row-movies-note"></span>
+                </div>
+                <div class="rail-wrap">
+                    <button type="button" class="rail-btn prev" aria-label="Geri kaydır">‹</button>
+                    <div class="rail" id="rail-movies"></div>
+                    <button type="button" class="rail-btn next" aria-label="İleri kaydır">›</button>
+                </div>
+            </section>
+            <section class="row" id="row-tv">
+                <div class="section-head">
+                    <h2 id="row-tv-title">Bugün Top 10 Dizi</h2>
+                    <span class="section-note" id="row-tv-note"></span>
+                </div>
+                <div class="rail-wrap">
+                    <button type="button" class="rail-btn prev" aria-label="Geri kaydır">‹</button>
+                    <div class="rail" id="rail-tv"></div>
+                    <button type="button" class="rail-btn next" aria-label="İleri kaydır">›</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <dialog class="detail" id="detail" aria-labelledby="detail-title">
+        <button type="button" class="detail-close" id="detail-close" aria-label="Kapat">×</button>
+        <div class="detail-poster" id="detail-poster"></div>
+        <div class="detail-body">
+            <p class="detail-type" id="detail-type"></p>
+            <h2 class="detail-title" id="detail-title"></h2>
+            <p class="detail-meta" id="detail-meta"></p>
+            <p class="detail-desc" id="detail-desc"></p>
+            <div class="episode-pick" id="episode-pick" hidden>
+                <label>Sezon <input type="number" id="ep-season" min="1" max="99" value="1" inputmode="numeric"></label>
+                <label>Bölüm <input type="number" id="ep-episode" min="1" max="999" value="1" inputmode="numeric"></label>
+                <label class="ep-free"><input type="checkbox" id="ep-free"> Bölümü oynatıcıda seçeceğim</label>
+            </div>
+            <div class="detail-actions">
+                <button type="button" class="btn btn-play" id="detail-play">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                    Oynat
+                </button>
+                <a class="btn btn-ghost" id="detail-imdb" target="_blank" rel="noopener noreferrer">IMDb’de aç ↗</a>
+            </div>
+        </div>
+    </dialog>
+
+    <footer class="site-foot">
+        <span>IMDb Arşiv <b id="app-version"></b> · IMDb ile resmi bir bağı yoktur</span>
+        <a href="update.html" target="_blank">Güncellemeleri denetle</a>
+        <a href="https://github.com/confessyourcin/imdbarsiv" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </footer>
+
+    <script src="content.js"></script>
+    <script src="app.js"></script>
+    <script src="update-banner.js"></script>
+</body>
+</html>

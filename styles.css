@@ -1,0 +1,489 @@
+.vidsrc-btn-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.vidsrc-or-text {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 9px;
+    text-align: center;
+    margin: 2px 0;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.vidsrc-server-container {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+
+.vidsrc-server-btn {
+    flex: 1;
+    background-color: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 3px 6px;
+    font-size: 9px;
+    font-weight: normal;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 24px;
+}
+
+.vidsrc-server-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.vidsrc-info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 10px;
+    height: 10px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 7px;
+    font-family: serif;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+.vidsrc-play-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5c518;
+    color: #000000;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    height: 32px;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.vidsrc-split-button {
+    display: flex;
+    width: 100%;
+    height: 32px;
+    margin-bottom: 8px;
+    position: relative;
+    border-radius: 4px;
+    overflow: visible;
+}
+
+.vidsrc-split-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5c518;
+    color: #000000;
+    border: none;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    padding: 0 12px;
+}
+
+.vidsrc-split-main:hover {
+    background-color: #e2b616;
+}
+
+.vidsrc-split-toggle {
+    width: 85px;
+    background-color: #f5c518;
+    color: #000000;
+    border: none;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.vidsrc-toggle-icon-only {
+    width: 32px !important;
+}
+
+.vidsrc-toggle-or {
+    font-size: 11px;
+    font-weight: bold;
+    opacity: 0.9;
+}
+
+.vidsrc-split-toggle:hover {
+    background-color: #e2b616;
+}
+
+.vidsrc-split-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 160px;
+    background-color: #1f1f1f;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 1000001;
+    margin-top: 4px;
+}
+
+.vidsrc-split-menu.show {
+    display: block;
+}
+
+.vidsrc-menu-item {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.vidsrc-ep-wrapper {
+    width: 100%;
+    margin-top: 6px;
+    margin-bottom: 12px;
+}
+
+.vidsrc-ep-selector-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.vidsrc-ep-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+
+.vidsrc-season-select,
+.vidsrc-episode-select,
+.vidsrc-season-select-secondary,
+.vidsrc-episode-select-secondary {
+    flex: 1;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    height: 36px;
+    outline: none;
+}
+
+.vidsrc-season-select:hover,
+.vidsrc-episode-select:hover {
+    border-color: #f5c518;
+}
+
+.vidsrc-go-btn,
+.vidsrc-go-btn-secondary {
+    background-color: #f5c518;
+    color: #000;
+    border: none;
+    padding: 0 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 36px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vidsrc-go-btn:hover,
+.vidsrc-go-btn-secondary:hover {
+    background-color: #e2b616;
+    transform: translateY(-1px);
+}
+
+.vidsrc-split-main:disabled,
+.vidsrc-split-toggle:disabled,
+.vidsrc-go-btn:disabled,
+.vidsrc-go-btn-secondary:disabled {
+    background-color: #333 !important;
+    color: #666 !important;
+    cursor: not-allowed !important;
+    border-color: #444 !important;
+}
+
+.vidsrc-split-main:disabled svg {
+    fill: #666 !important;
+}
+
+.vidsrc-status-tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.vidsrc-status-loading {
+    background: #444;
+    color: #aaa;
+}
+
+.vidsrc-status-ready {
+    background: #2e7d32;
+    color: #fff;
+}
+
+.vidsrc-status-notready {
+    background: #c62828;
+    color: #fff;
+}
+
+.vidsrc-info-tooltip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 10px;
+    font-family: serif;
+    font-style: italic;
+    margin-left: 6px;
+    cursor: help;
+    position: relative;
+    vertical-align: middle;
+}
+
+.vidsrc-info-tooltip:hover::after {
+    content: "This series/movie is not yet available in the extension. Please try again later.";
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000002;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    font-family: sans-serif;
+    font-style: normal;
+}
+
+.vidsrc-info-tooltip:hover::before {
+    content: "";
+    position: absolute;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #333;
+    z-index: 1000002;
+}
+
+.vidsrc-play-button svg {
+    margin-right: 4px;
+    width: 16px;
+    height: 16px;
+}
+
+.vidsrc-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 999999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.vidsrc-modal-content {
+    position: relative;
+    width: 80%;
+    height: 80%;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.vidsrc-modal-close {
+    position: static;
+    color: #fff;
+    font-size: 30px;
+    cursor: pointer;
+    z-index: 1000000;
+    margin-left: auto;
+    min-width: 44px;
+    min-height: 44px;
+    background: transparent;
+    border: 0;
+}
+
+.vidsrc-iframe {
+    width: 100%;
+    height: auto;
+    border: none;
+    flex: 1;
+    min-height: 0;
+}
+
+.vidsrc-player-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    color: #fff;
+    background: #1a1a1a;
+    flex: 0 0 auto;
+}
+
+.vidsrc-source-label {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.vidsrc-source-select, .vidsrc-next-source {
+    min-height: 44px;
+    max-width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #fff;
+    background: #292929;
+    cursor: pointer;
+}
+
+.vidsrc-next-source {
+    color: #111;
+    background: #f5c518;
+    border-color: #f5c518;
+}
+
+.vidsrc-source-status {
+    flex-basis: 100%;
+    font-size: 12px;
+    color: #ddd;
+}
+
+.vidsrc-source-select:focus-visible, .vidsrc-next-source:focus-visible, .vidsrc-modal-close:focus-visible {
+    outline: 2px solid #f5c518;
+    outline-offset: 3px;
+}
+
+.vidsrc-external-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    color: #eee;
+    font-size: 16px;
+    text-align: center;
+}
+
+.vidsrc-external-panel[hidden], .vidsrc-iframe[hidden] {
+    display: none;
+}
+
+.vidsrc-external-link {
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    color: #111;
+    background: #f5c518;
+    text-decoration: none;
+}
+
+button.vidsrc-external-link {
+    border: none;
+    font-family: inherit;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.vidsrc-external-link:focus-visible, .vidsrc-external-alt:focus-visible {
+    outline: 2px solid #f5c518;
+    outline-offset: 3px;
+}
+
+.vidsrc-external-alt {
+    color: #ccc;
+    font-size: 14px;
+}
+
+/* Dizi: oynatıcı araç çubuğundaki sezon/bölüm seçici */
+.vidsrc-episode-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding-left: 8px;
+    border-left: 1px solid #3a3a3a;
+}
+.vidsrc-season-pick, .vidsrc-episode-pick { min-width: 72px; }
+.vidsrc-ep-next {
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid #666;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #fff;
+    background: #292929;
+    cursor: pointer;
+}
+.vidsrc-ep-next:hover:not(:disabled) { border-color: #f5c518; }
+.vidsrc-ep-next:disabled { opacity: .45; cursor: default; }
+.vidsrc-ep-next:focus-visible { outline: 2px solid #f5c518; outline-offset: 3px; }
+@media (max-width: 640px) {
+    .vidsrc-episode-group { padding-left: 0; border-left: 0; }
+}

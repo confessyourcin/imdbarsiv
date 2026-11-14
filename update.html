@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IMDb Arşiv Güncelleme</title>
+    <link rel="icon" href="icon.png">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="update.css">
+</head>
+<body class="upd">
+    <main class="upd-wrap">
+        <header class="upd-head">
+            <span class="brand-logo">IMDb</span>
+            <span class="brand-name">Arşiv · Güncelleme</span>
+        </header>
+
+        <section class="upd-card" id="state-check">
+            <h1 id="check-title">Güncelleme denetleniyor…</h1>
+            <p class="upd-lead" id="check-text"></p>
+            <div class="upd-actions" id="check-actions" hidden>
+                <button type="button" class="btn btn-play" id="check-again">Yeniden denetle</button>
+                <a class="btn btn-ghost" id="repo-link" target="_blank" rel="noopener noreferrer">GitHub sayfası ↗</a>
+            </div>
+        </section>
+
+        <section class="upd-card" id="state-update" hidden>
+            <p class="upd-kicker">Güncelleme mevcut</p>
+            <h1><span id="ver-from"></span> <span class="arrow">→</span> <span id="ver-to"></span></h1>
+            <p class="upd-lead">Tek tıkla güncellenir; komut dosyası ya da zip gerekmez. Sayfa yeni sürümü GitHub'dan indirir, doğrular, eklenti klasörüne yazar ve eklentiyi yeniden başlatır.</p>
+
+            <div class="upd-actions">
+                <button type="button" class="btn btn-play" id="do-update">Şimdi güncelle</button>
+            </div>
+            <div class="upd-progress" id="progress" role="status" aria-live="polite" hidden>
+                <span class="spinner" aria-hidden="true"></span>
+                <span id="progress-text"></span>
+            </div>
+            <p class="upd-error" id="error" role="alert" hidden></p>
+
+            <div class="upd-note" id="first-time">
+                <h2>İlk güncellemede bir kez</h2>
+                <p>Chrome bir klasör seçme penceresi açar. <b>Eklentiyi yüklediğin klasörü</b> seç (içinde <code>manifest.json</code> olan), sonra <b>Dosyaları düzenle</b> iznini onayla. Sonraki güncellemelerde yalnızca izin onayı istenir.</p>
+                <p>Klasörün yerini bilmiyorsan: eklentiler sayfasında bu eklentinin <b>Ayrıntılar</b> bölümündeki <b>Kaynak</b> satırı.</p>
+                <button type="button" class="btn btn-ghost" id="open-extensions">Eklentiler sayfasını aç</button>
+            </div>
+
+            <details class="upd-alt">
+                <summary>Olmazsa: elle güncelle</summary>
+                <p>Zip'i indir, içindeki <code>imdbarsiv-main</code> klasörünün <b>içindekileri</b> eklenti klasörünün üzerine kopyala (dosyaların üzerine yaz). Klasörü silip yeniden oluşturma; Chrome eklentiyi kaldırır. Bu sayfa yeni dosyaları görünce eklentiyi kendisi yeniden başlatır.</p>
+                <div class="upd-actions">
+                    <a class="btn btn-ghost" id="zip-link" rel="noopener noreferrer">Zip'i indir</a>
+                    <button type="button" class="btn btn-ghost" id="reload-now">Kopyaladım, yeniden başlat</button>
+                </div>
+            </details>
+        </section>
+
+        <section class="upd-card" id="state-done" hidden>
+            <p class="upd-kicker ok">Tamamlandı</p>
+            <h1>Güncellendi: <span id="done-ver"></span></h1>
+            <p class="upd-lead">Eklenti yeni sürümle yeniden başladı. Açık IMDb sekmelerini yenilemeyi unutma; eski sekmelerdeki oynatıcı düğmeleri yenileyene kadar çalışmaz.</p>
+            <div class="upd-actions">
+                <button type="button" class="btn btn-play" id="open-archive">Arşivi aç</button>
+            </div>
+        </section>
+
+        <section class="upd-card" id="state-failed" hidden>
+            <p class="upd-kicker warn">Bir adım kaldı</p>
+            <h1>Chrome eski sürümü yükledi</h1>
+            <p class="upd-lead">Dosyalar değişti ama Chrome eklentiyi yeni dosyalarla başlatmadı. Eklentiler sayfasında bu eklentinin kartındaki <b>yenile (⟳)</b> düğmesine bas.</p>
+            <div class="upd-actions">
+                <button type="button" class="btn btn-play" id="open-extensions-2">Eklentiler sayfasını aç</button>
+            </div>
+        </section>
+
+        <p class="upd-foot">Kurulu sürüm: <b id="foot-ver"></b></p>
+    </main>
+    <script src="updater-core.js"></script>
+    <script src="update.js"></script>
+</body>
+</html>
