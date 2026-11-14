@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "IMDb Video Player",
-  "version": "1.9.2",
+  "version": "1.9.1",
   "description": "IMDb video player with VidSrc, VAPlayer, IMDb Player, VidSrc.mov and an HDFilmCehennemi popup fallback, an archive page with IMDb top 10 and search, and in-browser updates from GitHub.",
   "permissions": [
     "activeTab",

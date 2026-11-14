@@ -344,7 +344,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             return;
         }
         patchUpdateState({ pendingReload: { to: msg.version, inline: true, at: Date.now() } })
-            .then(() => { sendResponse({ ok: true }); setTimeout(() => chrome.runtime.reload(), 800); })
+            .then(() => {
+                sendResponse({ ok: true });
+                setTimeout(async () => {
+                    if (url.pathname === '/update.html' && sender.tab) {
+                        try { await chrome.tabs.remove(sender.tab.id); } catch (e) { /* zaten kapalı */ }
+                    }
+                    chrome.runtime.reload();
+                }, 800);
+            })
             .catch(() => sendResponse({ ok: false }));
         return true;
     }

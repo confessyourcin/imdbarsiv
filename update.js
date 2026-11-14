@@ -140,6 +140,7 @@
             throw new Error('Kayıtlı klasör artık bu eklentinin yüklendiği klasör değil. Doğru klasörü “Klasörü yeniden seç” ile seç.');
         }
         if (backgroundAuto) {
+            phase = 'picker';
             const err = new Error('Klasör seçimi için güncelleme sayfasındaki düğmeyi kullan.');
             err.name = 'SetupRequiredError';
             throw err;
@@ -148,6 +149,7 @@
     }
 
     let busy = false;
+    let permissionWindow = false;
     async function runUpdate(info, forcePick, backgroundAuto) {
         if (busy) return;
         if (!savedDirReady && !forcePick) {
@@ -181,9 +183,9 @@
         } catch (e) {
             setProgress('');
             const msg = e && e.name === 'PermissionRequiredError'
-                ? 'Devam etmek için “Şimdi güncelle”ye basıp klasöre yazma iznini onayla.'
+                ? 'Chrome klasör iznini yeniden istiyor. Küçük güncelleme penceresinde “İzin ver ve güncelle”ye basıp izni onayla.'
                 : e && e.name === 'SetupRequiredError'
-                    ? 'İlk kullanım için “Şimdi güncelle”ye basıp eklenti klasörünü seç ve yazma iznini onayla.'
+                    ? 'Küçük güncelleme penceresinde “Klasör seç ve güncelle”ye basıp eklenti klasörünü seç.'
                 : e && e.name === 'DirectoryNotReadyError'
                     ? 'Klasör bilgisi yüklenemedi. Birkaç saniye sonra yeniden dene.'
                 : e && e.name === 'AbortError' && phase === 'picker' ? 'Klasör seçimi iptal edildi.'
@@ -193,12 +195,19 @@
                     + (phase === 'install' ? ' Bazı dosyalar yazılmış olabilir; “Şimdi güncelle” ile yeniden dene.' : '');
             setError(msg);
             btn.disabled = false;
+            if (e && e.name === 'PermissionRequiredError') btn.textContent = 'İzin ver ve güncelle';
+            if (e && e.name === 'SetupRequiredError') btn.textContent = 'Klasör seç ve güncelle';
             $('reselect').disabled = false;
-            if (params.get('banner') === '1' && (phase === 'permission' || phase === 'picker')) {
+            if (params.get('banner') === '1' && !permissionWindow && (phase === 'permission' || phase === 'picker')) {
                 try {
                     const tab = await chrome.tabs.getCurrent();
-                    if (tab && Number.isInteger(tab.id)) await chrome.tabs.update(tab.id, { active: true });
-                } catch (e) { /* sayfa öne alınamadı */ }
+                    if (tab && Number.isInteger(tab.id)) {
+                        await chrome.windows.create({ tabId: tab.id, type: 'popup', width: 520, height: 680, focused: true });
+                        permissionWindow = true;
+                    }
+                } catch (e) {
+                    setError('İzin penceresi açılamadı. Arşiv sayfasından güncellemeyi başlat.');
+                }
             }
         } finally {
             busy = false;
