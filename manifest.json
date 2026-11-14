@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "IMDb Video Player",
-  "version": "1.9.8",
+  "version": "1.9.9",
   "description": "IMDb video player with multiple embed sources, a Servers list, HDFilmCehennemi popup fallback and an IMDb archive page.",
   "permissions": [
     "activeTab",
