@@ -1,11 +1,14 @@
 // IMDb sayfalarında (ve arşiv sayfasında) güncelleme bildirimi.
 // GitHub'daki sürüm daha yeniyse sağ altta "Güncellensin mi?" kartı gösterir.
+// "Hayır" ve × kartı yalnızca o sayfa için gizler: F5'te ya da başka sayfaya geçince
+// (IMDb'nin yeniden yüklemesiz sayfa geçişleri dahil) kart yeniden gelir.
 (function () {
     'use strict';
     if (window.top !== window || window.__imdbArsivUpdateBanner) return;
     window.__imdbArsivUpdateBanner = true;
 
-    const DISMISS_KEY = 'imdbarsiv-update-dismissed';
+    let host = null;           // gösterilen kart
+    let hiddenOnUrl = null;    // "Hayır" denilen sayfa adresi
 
     function send(msg) {
         return new Promise((resolve) => {
@@ -21,15 +24,8 @@
         });
     }
 
-    function dismissedThisTab(version) {
-        try { return sessionStorage.getItem(DISMISS_KEY) === version; } catch (e) { return false; }
-    }
-    function dismissThisTab(version) {
-        try { sessionStorage.setItem(DISMISS_KEY, version); } catch (e) { /* yok */ }
-    }
-
     function show(info) {
-        const host = document.createElement('div');
+        host = document.createElement('div');
         // Oynatıcı overlay'inin (z-index 999999) altında kalır; açık videonun üstünü kapatmaz.
         host.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:999990;';
         const root = host.attachShadow({ mode: 'open' });
@@ -104,24 +100,25 @@
         yes.className = 'primary';
         yes.type = 'button';
         yes.textContent = 'Evet, güncelle';
-        const later = document.createElement('button');
-        later.className = 'ghost';
-        later.type = 'button';
-        later.textContent = 'Sonra';
+        const no = document.createElement('button');
+        no.className = 'ghost';
+        no.type = 'button';
+        no.textContent = 'Hayır';
         const notes = document.createElement('a');
         notes.href = info.repoUrl + '/commits/main';
         notes.target = '_blank';
         notes.rel = 'noopener noreferrer';
         notes.textContent = 'Neler değişti?';
-        row.append(yes, later, notes);
+        row.append(yes, no, notes);
 
         card.append(top, p, row);
         root.append(style, card);
         document.documentElement.appendChild(host);
 
-        const remove = () => host.remove();
-        x.onclick = () => { dismissThisTab(info.latest); remove(); };
-        later.onclick = () => { send({ type: 'update-snooze', version: info.latest }); remove(); };
+        const remove = () => { if (host) host.remove(); host = null; };
+        const hideOnThisPage = () => { hiddenOnUrl = location.href; remove(); };
+        x.onclick = hideOnThisPage;
+        no.onclick = hideOnThisPage;
         yes.onclick = async () => {
             const res = await send({ type: 'update-open', version: info.latest });
             if (res && res.ok) { remove(); return; }
@@ -130,13 +127,29 @@
         };
     }
 
+    let running = false;
     async function run() {
-        const info = await send({ type: 'update-check' });
-        if (!info || !info.ok || !info.available || info.snoozed) return;
-        if (dismissedThisTab(info.latest)) return;
-        show(info);
+        if (running || host) return;
+        running = true;
+        try {
+            const info = await send({ type: 'update-check' });
+            if (!info || !info.ok || !info.available) return;
+            if (hiddenOnUrl === location.href || host) return;
+            hiddenOnUrl = null;
+            show(info);
+        } finally {
+            running = false;
+        }
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, { once: true });
     else run();
+
+    // IMDb bazı sayfa geçişlerini yeniden yüklemeden yapar; adres değişince kart yeniden denenir.
+    let lastUrl = location.href;
+    setInterval(() => {
+        if (location.href === lastUrl) return;
+        lastUrl = location.href;
+        if (!host && hiddenOnUrl && hiddenOnUrl !== location.href) run();
+    }, 1000);
 })();

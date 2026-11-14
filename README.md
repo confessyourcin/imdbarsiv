@@ -27,7 +27,7 @@ IMDb sayfalarına oynatıcı ekleyen ve kendi film/dizi arşivi sayfası olan bi
 
 ## Güncelleme
 
-Yeni sürüm çıktığında IMDb'de sağ altta bir kart görünür:
+Yeni sürüm çıktığında IMDb'de sağ altta bir kart görünür. **Hayır** (ya da ×) kartı yalnızca o sayfada gizler; sayfayı yenileyince ya da başka sayfaya geçince kart yeniden gelir.
 
 1. **Evet, güncelle** → güncelleme sayfası açılır.
 2. **Şimdi güncelle**'ye bas.
@@ -62,14 +62,14 @@ Neden tamamen sessiz değil? Chrome, Web Mağazası dışından elle yüklenen e
 | `storage` | Güncelleme denetim zamanı ve "sonra" tercihi |
 | `activeTab` | Etkin sekmede çalışma |
 
-Eklenti kişisel veri toplamaz. İzlemek istediğin başlığın IMDb kimliği, oynatmak için seçilen kaynağa (VidSrc, VAPlayer, IMDb Player, VidSrc.mov) ve HDFilmCehennemi aramasına gider; aramalar IMDb'ye gider. Güncelleme denetimi yalnızca bu depodaki `manifest.json` dosyasını okur.
+Eklenti kişisel veri toplamaz. İzlemek istediğin başlığın IMDb kimliği, oynatmak için seçilen kaynağa (VidSrc, VAPlayer, IMDb Player, VidSrc.mov) ve HDFilmCehennemi aramasına gider; aramalar IMDb'ye gider. Güncelleme denetimi yalnızca GitHub'dan bu deponun son commit kimliğini ve o commit'teki `manifest.json` dosyasını okur.
 
 ## Yeni sürüm yayınlama (geliştirici için)
 
 1. `manifest.json` içindeki `"version"` değerini artır (ör. `1.9.0` → `1.9.1`).
 2. Dosyaları bu deponun **kök dizinine**, `main` dalına yükle. Alt klasöre yüklersen güncelleme bulunamaz.
 3. `manifest.json` içindeki `"name"` alanını değiştirme; güncelleyici paketi bu adla doğrular.
-4. Kullanıcılar IMDb'ye girince en geç 6 saat içinde güncelleme kartını görür (o sürüme "Sonra" diyenler 24 saat sonra, bağlantı hatasında 30 dk sonra yeniden denenir). `main`'e her gönderim kullanıcılara gider; yarım işi ayrı dalda tut.
+4. Kullanıcılar IMDb'ye girince en geç 6 saat içinde güncelleme kartını görür; güncelleme sayfası ve “Güncellemeleri denetle” ise her açılışta anlık denetler (bağlantı hatasında 30 dk sonra yeniden denenir). `main`'e her gönderim kullanıcılara gider; yarım işi ayrı dalda tut.
 
 Teknik notlar: [NOTLAR.md](NOTLAR.md)
 

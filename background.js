@@ -201,9 +201,28 @@ chrome.action.onClicked.addListener(() => {
 // ---------------------------------------------------------------------------
 const UPDATE_REPO = 'confessyourcin/imdbarsiv';
 const UPDATE_BRANCH = 'main';
-const UPDATE_MANIFEST_URL = `https://raw.githubusercontent.com/${UPDATE_REPO}/${UPDATE_BRANCH}/manifest.json`;
+// raw.githubusercontent.com dal adresini ~5 dk önbellekte tutar ve sorgu dizesini (?t=…) yok sayar;
+// bu yüzden önce API'den dalın son commit kimliği (önbelleksiz) alınır, manifest ve zip o commit'e
+// sabitlenmiş adreslerden okunur: hem anlık hem de görülen sürümle indirilen paket aynı olur.
+const UPDATE_COMMIT_API = `https://api.github.com/repos/${UPDATE_REPO}/commits/${UPDATE_BRANCH}`;
+const SHA_RE = /^[0-9a-f]{40}$/;
+const rawManifestUrl = (ref) => `https://raw.githubusercontent.com/${UPDATE_REPO}/${ref}/manifest.json`;
+const zipUrlFor = (sha) => SHA_RE.test(sha || '')
+    ? `https://codeload.github.com/${UPDATE_REPO}/zip/${sha}`
+    : `https://codeload.github.com/${UPDATE_REPO}/zip/refs/heads/${UPDATE_BRANCH}`;
+
+async function latestCommitSha() {
+    const res = await fetch(UPDATE_COMMIT_API, {
+        cache: 'no-store',
+        credentials: 'omit',
+        headers: { Accept: 'application/vnd.github.sha' }
+    });
+    if (!res.ok) throw new Error('GitHub API HTTP ' + res.status);
+    const sha = (await res.text()).trim();
+    if (!SHA_RE.test(sha)) throw new Error('GitHub API beklenmeyen yanıt');
+    return sha;
+}
 const UPDATE_CHECK_EVERY = 6 * 60 * 60 * 1000;
-const UPDATE_SNOOZE = 24 * 60 * 60 * 1000;
 const UPDATE_RETRY_AFTER_ERROR = 30 * 60 * 1000;
 const VERSION_RE = /^\d{1,5}(\.\d{1,5}){0,3}$/;
 // Chrome sürüm parçaları 0-65535 aralığında olmalı.
@@ -227,7 +246,7 @@ async function getUpdateState() {
 }
 
 // "upd" durumuna yazmalar sıraya alınır ve her yazma yalnızca kendi alanlarını en güncel
-// durumun üzerine birleştirir (eşzamanlı denetim "Sonra" ya da pendingReload'ı ezmesin).
+// durumun üzerine birleştirir (eşzamanlı denetim pendingReload'ı ezmesin).
 let updQueue = Promise.resolve();
 function patchUpdateState(patch) {
     const run = updQueue.then(async () => {
@@ -247,16 +266,20 @@ async function checkForUpdate(force) {
     const retryOk = !u.failedAt || Date.now() - u.failedAt > UPDATE_RETRY_AFTER_ERROR;
     if (force || (due && retryOk)) {
         try {
-            const res = await fetch(UPDATE_MANIFEST_URL + '?t=' + Date.now(), { cache: 'no-store', credentials: 'omit' });
+            // Commit kimliği alınamazsa (ör. API saatlik sınırı) dal adresine düşülür; o zaman
+            // sonuç birkaç dakika eski olabilir.
+            let sha = null;
+            try { sha = await latestCommitSha(); } catch (e) { sha = null; }
+            const res = await fetch(rawManifestUrl(sha || UPDATE_BRANCH), { cache: 'no-store', credentials: 'omit' });
             if (res.ok) {
                 const j = await res.json();
                 // Uzaktan yalnızca sürüm metni okunur; başka hiçbir alan kullanılmaz.
                 latest = j && isValidVersion(j.version) ? j.version : null;
-                await patchUpdateState({ latest, checkedAt: Date.now(), failedAt: 0 });
+                await patchUpdateState({ latest, latestSha: sha, checkedAt: Date.now(), failedAt: 0 });
             } else if (res.status === 404) {
                 // Depoda manifest.json yok: hata değil, yalnızca sürüm bilgisi yok.
                 latest = null;
-                await patchUpdateState({ latest, checkedAt: Date.now(), failedAt: 0 });
+                await patchUpdateState({ latest, latestSha: null, checkedAt: Date.now(), failedAt: 0 });
             } else {
                 throw new Error('HTTP ' + res.status);
             }
@@ -268,15 +291,13 @@ async function checkForUpdate(force) {
         u = await getUpdateState();
     }
     const available = !!latest && compareVersions(latest, current) > 0;
-    const snoozed = available && !!u.snooze && u.snooze.version === latest && Date.now() < u.snooze.until;
     return {
         current,
         latest,
         available,
-        snoozed,
         fetchError,
         repoUrl: `https://github.com/${UPDATE_REPO}`,
-        zipUrl: `https://codeload.github.com/${UPDATE_REPO}/zip/refs/heads/${UPDATE_BRANCH}`
+        zipUrl: zipUrlFor(u.latestSha)
     };
 }
 
@@ -291,11 +312,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         checkForUpdate(!!msg.force)
             .then(r => sendResponse({ ok: true, ...r }))
             .catch(e => sendResponse({ ok: false, error: String(e && e.message || e) }));
-        return true;
-    }
-    if (msg.type === 'update-snooze') {
-        patchUpdateState({ snooze: { version: String(msg.version), until: Date.now() + UPDATE_SNOOZE } })
-            .then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
         return true;
     }
     if (msg.type === 'update-open') {

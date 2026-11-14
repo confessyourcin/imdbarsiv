@@ -18,7 +18,7 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 | Dosya | Görev |
 |---|---|
 | `manifest.json` | İzinler, içerik betikleri, `action`. **`name` alanını değiştirme** (aşağıya bak). |
-| `background.js` | Servis çalışanı. HDFilmCehennemi çözümleme (`hdfc-resolve`), oynatıcı boyutunda popup (`hdfc-open`), simge tıklaması → `app.html`, güncelleme denetimi (`update-check`, `update-snooze`, `update-open`), yeniden başlatma sonrası `pendingReload` kontrolü. |
+| `background.js` | Servis çalışanı. HDFilmCehennemi çözümleme (`hdfc-resolve`), oynatıcı boyutunda popup (`hdfc-open`), simge tıklaması → `app.html`, güncelleme denetimi (`update-check`, `update-open`), yeniden başlatma sonrası `pendingReload` kontrolü. |
 | `content.js` | Kaynak listesi (`getServers`), modal oynatıcı (`showModal`), yedeğe geçiş, VidSrc `postMessage` dinleyicisi, dizi sezon/bölüm seçicisi. Sonunda `window.IMDbPlayer = { getServers, showModal }` dışa açılır. IMDb düğmeleri yalnızca `imdb.com` üzerinde eklenir. |
 | `styles.css` | Oynatıcı ve IMDb düğme stilleri (yalnızca `.vidsrc-*` sınıfları). |
 | `app.html` / `app.js` / `app.css` | Arşiv sayfası. `content.js`'i normal betik olarak yükleyip `window.IMDbPlayer`'ı kullanır. |
@@ -39,7 +39,7 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 - **"Media not found":** HDFC'ye modal başına **bir kez** sıçranır, sonra normal yedek sırası işler. Bilinen "bulunamadı" adresleri `vidsrcNotFound` içinde tutulur.
 - **Arka plan mesajları:** her `onMessage` dinleyicisi `sender.id === chrome.runtime.id` denetler. Asenkron yanıt veren dal `return true` döndürür. Birden fazla dinleyici var; kendi türün değilse hiçbir şey döndürme.
 - **Güncelleyici:**
-  - **Uzak veri:** uzaktan yalnızca `manifest.json`'daki `version` okunur ve sayısal karşılaştırılır (`1.10.0 > 1.9.0`).
+  - **Uzak veri:** önce `api.github.com/repos/<repo>/commits/main` ile son commit kimliği (SHA) alınır, sonra yalnızca o commit'teki `manifest.json`'un `version` alanı okunur ve sayısal karşılaştırılır (`1.10.0 > 1.9.0`). Dal adresini (`raw…/main/…`) doğrudan kullanma: CDN ~5 dk eski içerik verir ve `?t=` gibi sorgu dizelerini yok sayar. API'ye ulaşılamazsa dal adresine düşülür.
   - **Klasör kanıtı:** seçilen klasörün Chrome'un yüklediği klasör olduğu `updater-probe.txt` yoklama dosyasıyla kanıtlanır (yazılır, `chrome.runtime.getURL` ile okunur, silinir).
   - **Paket doğrulaması:** paket `name` aynı ve sürüm daha yeni olmalı; zip ≤ 30 MB, açılmış toplam ≤ 60 MB.
   - **Yol filtresi:** `..`, mutlak yol, Windows'a ayrılmış adlar, sonu nokta/boşluk olan adlar, `.git`, `.github` ve kökte `_` ile başlayanlar (`_locales` hariç) yazılmaz.
@@ -60,7 +60,7 @@ Arayüz metinleri **Türkçe**. Yeni metinleri de Türkçe yaz.
 
 - `main` dalı **canlıdır**: oradaki `manifest.json` sürümü artınca kullanıcılar en geç 6 saat içinde güncelleme kartını görür. Yarım işi ayrı dalda tut.
 - Yayın: `manifest.json` → `"version"` artır, NOTLAR.md'ye kısa not ekle, `main`'e gönder.
-- Dosyalar depo **kök dizininde** olmalı; güncelleyici `codeload.github.com/<repo>/zip/refs/heads/main` zip'indeki tek üst klasörü soyar ve kökte `manifest.json` arar.
+- Dosyalar depo **kök dizininde** olmalı; güncelleyici `codeload.github.com/<repo>/zip/<sha>` zip'indeki (denetlenen commit) tek üst klasörü soyar ve kökte `manifest.json` arar.
 - Depo ve dal adı iki yerde geçer: `background.js` (`UPDATE_REPO`, `UPDATE_BRANCH`) ve README bağlantıları.
 
 ## Doğrulama

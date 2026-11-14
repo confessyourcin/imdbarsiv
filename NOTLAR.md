@@ -89,3 +89,10 @@ Doğrulama: çekirdek tarayıcıda OPFS hedefiyle denendi — boş GitHub deposu
 - TV_SET beklenirken oynatıcının bildirdiği eski bölüm seçimi geri almaz; onay ya da 4 sn zaman aşımı beklenir.
 - Güncelleme kartı oynatıcı overlay'inin altında kalır.
 - Güncelleme sayfası sadeleşti: "İlk güncellemede bir kez" açıklaması ve "elle güncelle" bölümü (zip bağlantısı, manifest izleme) kaldırıldı. "Klasörü yeniden seç" seçme penceresini tıklamanın ilk adımı olarak hemen açar, klasör doğrulanınca güncellemeyi başlatır; başarısız sayfasındaki aynı düğme seçtirip `update.html?auto=1` ile güncellemeyi kendiliğinden başlatır.
+
+
+## 1.9.3
+
+- Sürüm denetimi anlık: `raw.githubusercontent.com` dal adresini ~5 dk önbellekte tutuyor ve sorgu dizesini (`?t=…`) yok sayıyor (ölçüldü: yeni `?t=` ile istek de `X-Cache: HIT`). Artık önce `api.github.com/repos/<repo>/commits/main` (`Accept: application/vnd.github.sha`, önbelleksiz) ile son commit kimliği alınır; `manifest.json` `raw.githubusercontent.com/<repo>/<sha>/manifest.json` adresinden, güncelleme zip'i `codeload.github.com/<repo>/zip/<sha>` adresinden okunur. Görülen sürümle indirilen paket aynı commit'tir. API'ye ulaşılamazsa (kimliksiz istekte saatte 60 sınırı) dal adresine düşülür; o durumda sonuç birkaç dakika eski olabilir.
+- Arşiv alt bilgisindeki GitHub bağlantısı kaldırıldı (GitHub'daki 1.9.2 ile eşitlendi).
+- Güncelleme kartında "Sonra" yerine **Hayır**: kart yalnızca o sayfa için gizlenir; F5'te ya da başka sayfaya geçince (IMDb'nin yeniden yüklemesiz geçişleri dahil, adres 1 sn'de bir denetlenir) yeniden gelir. × aynı davranır. 24 saatlik erteleme (`update-snooze`, `upd.snooze`) ve sekme bazlı `sessionStorage` gizleme kaldırıldı.
