@@ -10,6 +10,12 @@
     let host = null;           // gösterilen kart
     let hiddenOnUrl = null;    // "Hayır" denilen sayfa adresi
     let installing = false;
+    let updateStatus = null;
+    chrome.runtime.onMessage.addListener((msg, sender) => {
+        if (sender.id !== chrome.runtime.id || !msg || msg.type !== 'update-banner-status'
+            || typeof msg.text !== 'string' || !updateStatus) return;
+        updateStatus(msg);
+    });
 
     function send(msg) {
         return new Promise((resolve) => {
@@ -150,15 +156,22 @@
                 }
                 return;
             }
+            installing = true;
+            updateStatus = msg => {
+                p.textContent = msg.text;
+                if (msg.error) installing = false;
+            };
             const res = await send({ type: 'update-start', version: info.latest });
             if (res && res.ok) {
-                p.textContent = 'Güncelleme başlatıldı. İzin veya klasör seçimi gerekiyorsa açılan güncelleme sayfasında tamamla.';
+                if (p.textContent === 'Güncelleme başlatılıyor…') p.textContent = 'Kayıtlı klasör ve yazma izni kontrol ediliyor…';
                 yes.remove();
                 no.remove();
                 notes.remove();
                 return;
             }
             p.textContent = 'Güncelleme başlatılamadı. Sayfayı yenileyip tekrar dene.';
+            installing = false;
+            updateStatus = null;
             yes.disabled = false;
             yes.textContent = 'Tekrar dene';
         };

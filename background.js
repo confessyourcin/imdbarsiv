@@ -321,12 +321,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     if (msg.type === 'update-start') {
         const to = isValidVersion(msg.version) ? msg.version : '';
-        openUpdatePage({ ...(to ? { to } : {}), auto: '1', banner: '1' }, false)
+        openUpdatePage({ ...(to ? { to } : {}), auto: '1', banner: '1', ...(sender.tab ? { target: String(sender.tab.id) } : {}) }, false)
+            .then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
+        return true;
+    }
+    if (msg.type === 'update-banner-status') {
+        const url = new URL(sender.url || chrome.runtime.getURL(''));
+        const target = Number(url.searchParams.get('target'));
+        if (url.protocol !== 'chrome-extension:' || url.host !== chrome.runtime.id || url.pathname !== '/update.html'
+            || !url.searchParams.has('target') || !Number.isInteger(target) || target < 0
+            || typeof msg.text !== 'string' || msg.text.length > 1000) return;
+        chrome.tabs.sendMessage(target, { type: 'update-banner-status', text: msg.text, error: !!msg.error })
             .then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
         return true;
     }
     if (msg.type === 'update-inline-reload') {
-        if (sender.url !== chrome.runtime.getURL('app.html') || !isValidVersion(msg.version)) {
+        const url = new URL(sender.url || chrome.runtime.getURL(''));
+        const inlinePage = sender.url === chrome.runtime.getURL('app.html') ||
+            (url.protocol === 'chrome-extension:' && url.host === chrome.runtime.id && url.pathname === '/update.html' && url.searchParams.get('banner') === '1');
+        if (!inlinePage || !isValidVersion(msg.version)) {
             sendResponse({ ok: false });
             return;
         }

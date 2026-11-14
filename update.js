@@ -44,6 +44,14 @@
     async function reloadInto(target) {
         if (reloading) return;
         reloading = true;
+        if (params.get('banner') === '1') {
+            const result = await send({ type: 'update-inline-reload', version: target });
+            if (!result || !result.ok) {
+                reloading = false;
+                setError('Yeniden başlatılamadı. Eklentiler sayfasından eklentiyi yenile.');
+            }
+            return;
+        }
         const st = await chrome.storage.local.get('upd');
         await chrome.storage.local.set({ upd: { ...(st.upd || {}), pendingReload: { to: target || null, at: Date.now() } } });
         chrome.runtime.reload();
@@ -53,10 +61,12 @@
     function setProgress(text) {
         $('progress').hidden = !text;
         $('progress-text').textContent = text || '';
+        if (text && params.get('banner') === '1') send({ type: 'update-banner-status', text });
     }
     function setError(text) {
         $('error').hidden = !text;
         $('error').textContent = text || '';
+        if (text && params.get('banner') === '1') send({ type: 'update-banner-status', text, error: true });
     }
 
     // Seçilen klasör gerçekten Chrome'un bu eklentiyi yüklediği klasör mü?
