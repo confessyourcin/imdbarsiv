@@ -88,3 +88,4 @@ Doğrulama: çekirdek tarayıcıda OPFS hedefiyle denendi — boş GitHub deposu
 - Paket sınırları: zip ≤ 30 MB, açılmış toplam ≤ 60 MB, her girdinin açılmış boyutu merkezi dizindekiyle birebir aynı olmalı. Windows'a ayrılmış adlar (CON, NUL, COM1…), sonu nokta/boşluk olan adlar, `.git`, `.github` ve kökte `_` ile başlayan adlar (`_locales` hariç) yazılmaz. Sürüm parçaları ≤ 65535.
 - TV_SET beklenirken oynatıcının bildirdiği eski bölüm seçimi geri almaz; onay ya da 4 sn zaman aşımı beklenir.
 - Güncelleme kartı oynatıcı overlay'inin altında kalır.
+- Güncelleme sayfası sadeleşti: "İlk güncellemede bir kez" açıklaması ve "elle güncelle" bölümü (zip bağlantısı, manifest izleme) kaldırıldı. "Klasörü yeniden seç" seçme penceresini tıklamanın ilk adımı olarak hemen açar, klasör doğrulanınca güncellemeyi başlatır; başarısız sayfasındaki aynı düğme seçtirip `update.html?auto=1` ile güncellemeyi kendiliğinden başlatır.

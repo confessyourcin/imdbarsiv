@@ -27,7 +27,7 @@
         <section class="upd-card" id="state-update" hidden>
             <p class="upd-kicker">Güncelleme mevcut</p>
             <h1><span id="ver-from"></span> <span class="arrow">→</span> <span id="ver-to"></span></h1>
-            <p class="upd-lead">Tek tıkla güncellenir; komut dosyası ya da zip gerekmez. Sayfa yeni sürümü GitHub'dan indirir, doğrular, eklenti klasörüne yazar ve eklentiyi yeniden başlatır.</p>
+            <p class="upd-lead">Tek tıkla güncellenir. Sayfa yeni sürümü GitHub'dan indirir, doğrular, eklenti klasörüne yazar ve eklentiyi yeniden başlatır. İlk seferde Chrome eklentiyi yüklediğin klasörü seçmeni ve düzenleme iznini onaylamanı ister.</p>
 
             <div class="upd-actions">
                 <button type="button" class="btn btn-play" id="do-update">Şimdi güncelle</button>
@@ -39,21 +39,6 @@
             </div>
             <p class="upd-error" id="error" role="alert" hidden></p>
 
-            <div class="upd-note" id="first-time">
-                <h2>İlk güncellemede bir kez</h2>
-                <p>Chrome bir klasör seçme penceresi açar. <b>Eklentiyi yüklediğin klasörü</b> seç (içinde <code>manifest.json</code> olan), sonra <b>Dosyaları düzenle</b> iznini onayla. Sonraki güncellemelerde yalnızca izin onayı istenir.</p>
-                <p>Klasörün yerini bilmiyorsan: eklentiler sayfasında bu eklentinin <b>Ayrıntılar</b> bölümündeki <b>Kaynak</b> satırı.</p>
-                <button type="button" class="btn btn-ghost" id="open-extensions">Eklentiler sayfasını aç</button>
-            </div>
-
-            <details class="upd-alt">
-                <summary>Olmazsa: elle güncelle</summary>
-                <p>Zip'i indir, içindeki <code>imdbarsiv-main</code> klasörünün <b>içindekileri</b> eklenti klasörünün üzerine kopyala (dosyaların üzerine yaz). Klasörü silip yeniden oluşturma; Chrome eklentiyi kaldırır. Bu sayfa yeni dosyaları görünce eklentiyi kendisi yeniden başlatır.</p>
-                <div class="upd-actions">
-                    <a class="btn btn-ghost" id="zip-link" rel="noopener noreferrer">Zip'i indir</a>
-                    <button type="button" class="btn btn-ghost" id="reload-now">Kopyaladım, yeniden başlat</button>
-                </div>
-            </details>
         </section>
 
         <section class="upd-card" id="state-done" hidden>
@@ -68,7 +53,7 @@
         <section class="upd-card" id="state-failed" hidden>
             <p class="upd-kicker warn">Bir adım kaldı</p>
             <h1>Chrome eski sürümü yükledi</h1>
-            <p class="upd-lead">Chrome eklentiyi yeni dosyalarla başlatmadı. Eklentiler sayfasında bu eklentinin kartındaki <b>yenile (⟳)</b> düğmesine bas. Sorun sürerse güncelleme başka bir klasöre yazılmış olabilir: klasörü yeniden seçip tekrar güncelle.</p>
+            <p class="upd-lead">Chrome eklentiyi yeni dosyalarla başlatmadı. Eklentiler sayfasında bu eklentinin kartındaki <b>yenile (⟳)</b> düğmesine bas. Sorun sürerse güncelleme başka bir klasöre yazılmış olabilir: <b>Klasörü yeniden seç</b> ile doğru klasörü seç; güncelleme kendiliğinden yeniden başlar.</p>
             <div class="upd-actions">
                 <button type="button" class="btn btn-play" id="open-extensions-2">Eklentiler sayfasını aç</button>
                 <button type="button" class="btn btn-ghost" id="reselect-2">Klasörü yeniden seç</button>

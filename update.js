@@ -17,19 +17,16 @@
     function openExtensions() {
         chrome.tabs.create({ url: 'chrome://extensions/?id=' + chrome.runtime.id });
     }
-    $('open-extensions').onclick = openExtensions;
-    async function reselectFolder() {
-        try { await U.forgetDir(); } catch (e) { /* yok */ }
-        $('first-time').hidden = false;
-        setError('');
-        setProgress('Kayıtlı klasör unutuldu. “Şimdi güncelle”ye basınca klasör yeniden sorulacak.');
-    }
-    $('reselect').onclick = reselectFolder;
-    $('reselect-2').onclick = async () => {
-        try { await U.forgetDir(); } catch (e) { /* yok */ }
-        location.href = 'update.html';
-    };
     $('open-extensions-2').onclick = openExtensions;
+    // Başarısız sayfası: klasörü hemen seçtir, sonra güncellemeyi kendiliğinden başlat.
+    $('reselect-2').onclick = async () => {
+        try {
+            await pickFolder();
+            location.href = 'update.html?auto=1';
+        } catch (e) {
+            if (!(e && e.name === 'AbortError')) alert(e && e.message || String(e));
+        }
+    };
     $('open-archive').onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL('app.html') });
 
     function send(msg) {
@@ -44,30 +41,9 @@
     async function reloadInto(target) {
         if (reloading) return;
         reloading = true;
-        clearInterval(pollTimer);
         const st = await chrome.storage.local.get('upd');
         await chrome.storage.local.set({ upd: { ...(st.upd || {}), pendingReload: { to: target || null, at: Date.now() } } });
         chrome.runtime.reload();
-    }
-
-    // Elle kopyalama yolu için: eklenti klasöründeki manifest.json izlenir.
-    let pollTimer = 0;
-    async function diskVersion() {
-        const res = await fetch(chrome.runtime.getURL('manifest.json') + '?t=' + Date.now(), { cache: 'no-store' });
-        const j = await res.json();
-        return j && typeof j.version === 'string' ? j.version : null;
-    }
-    function watchDisk(target) {
-        clearInterval(pollTimer);
-        pollTimer = setInterval(async () => {
-            if (reloading || busy) return;
-            let v = null;
-            try { v = await diskVersion(); } catch (e) { return; }
-            if (v && VERSION_RE.test(v) && U.cmpVersions(v, target) >= 0) {
-                setProgress(`${v} dosyaları bulundu. Eklenti yeniden başlatılıyor…`);
-                setTimeout(() => reloadInto(v), 1000);
-            }
-        }, 2500);
     }
 
     // ---- Arayüz yardımcıları ----
@@ -93,7 +69,27 @@
     }
 
     let phase = '';
-    async function getFolder() {
+    // Klasör seçme penceresi. Tıklama etkinliği tükenmesin diye çağıranlar bunu
+    // tıklamanın ilk adımı olarak (öncesinde bekleme olmadan) çağırır.
+    async function pickFolder() {
+        if (typeof window.showDirectoryPicker !== 'function') {
+            throw new Error('Bu tarayıcı klasöre yazmayı desteklemiyor. Chrome ya da Edge\'in güncel sürümünü kullan.');
+        }
+        phase = 'picker';
+        // Tarayıcı eklenti klasörünün yolunu vermez; seçici çoğu kişinin zip'i çıkardığı İndirilenler'de açılır.
+        const dir = await window.showDirectoryPicker({ id: 'imdbarsiv', mode: 'readwrite', startIn: 'downloads' });
+        phase = 'verify';
+        setProgress('Klasör doğrulanıyor…');
+        if (!(await isOurFolder(dir))) {
+            setProgress('');
+            throw new Error('Seçilen klasör, Chrome\'un bu eklentiyi yüklediği klasör değil (başka bir kopya olabilir). Eklentiler sayfasında Ayrıntılar → Kaynak satırındaki klasörü “Klasörü yeniden seç” ile seç.');
+        }
+        try { await U.saveDir(dir); } catch (e) { /* bir dahaki sefere yeniden sorulur */ }
+        return dir;
+    }
+
+    async function getFolder(forcePick) {
+        if (forcePick) return pickFolder();
         let dir = null;
         try { dir = await U.getSavedDir(); } catch (e) { dir = null; }
         if (dir) {
@@ -109,37 +105,23 @@
             // Kayıtlı klasör artık Chrome'un yüklediği klasör değil: unut, yeni seçim iste.
             // (Aynı tıklamada seçici açılmaz; izin istemi tıklama etkinliğini tüketmiş olabilir.)
             try { await U.forgetDir(); } catch (e) { /* yok */ }
-            $('first-time').hidden = false;
-            throw new Error('Kayıtlı klasör artık bu eklentinin yüklendiği klasör değil. Doğru klasörü seçmek için “Şimdi güncelle”ye yeniden bas.');
+            throw new Error('Kayıtlı klasör artık bu eklentinin yüklendiği klasör değil. Doğru klasörü “Klasörü yeniden seç” ile seç.');
         }
-        if (typeof window.showDirectoryPicker !== 'function') {
-            throw new Error('Bu tarayıcı klasöre yazmayı desteklemiyor. Aşağıdaki “elle güncelle” yolunu kullan.');
-        }
-        phase = 'picker';
-        setProgress('Eklenti klasörünü seç…');
-        // Tarayıcı eklenti klasörünün yolunu vermez; seçici çoğu kişinin zip'i çıkardığı İndirilenler'de açılır.
-        dir = await window.showDirectoryPicker({ id: 'imdbarsiv', mode: 'readwrite', startIn: 'downloads' });
-        phase = 'verify';
-        if (!(await isOurFolder(dir))) {
-            throw new Error('Seçilen klasör, Chrome\'un bu eklentiyi yüklediği klasör değil (başka bir kopya olabilir). Eklentiler sayfasında Ayrıntılar → Kaynak satırındaki klasörü seç.');
-        }
-        try { await U.saveDir(dir); } catch (e) { /* bir dahaki sefere yeniden sorulur */ }
-        $('first-time').hidden = true;
-        return dir;
+        return pickFolder();
     }
 
     let busy = false;
-    async function runUpdate(info) {
+    async function runUpdate(info, forcePick) {
         if (busy) return;
         busy = true;
         const btn = $('do-update');
         btn.disabled = true;
-        $('reload-now').disabled = true;
         $('reselect').disabled = true;
         setError('');
         phase = '';
         try {
-            const dir = await getFolder();
+            // forcePick: "Klasörü yeniden seç" — seçici, tıklamanın ilk adımı olarak hemen açılır.
+            const dir = await getFolder(forcePick);
             phase = 'download';
             setProgress('Yeni sürüm indiriliyor…');
             const res = await fetch(info.zipUrl, { cache: 'no-store', credentials: 'omit' });
@@ -164,7 +146,6 @@
                     + (phase === 'install' ? ' Bazı dosyalar yazılmış olabilir; “Şimdi güncelle” ile yeniden dene.' : '');
             setError(msg);
             btn.disabled = false;
-            $('reload-now').disabled = false;
             $('reselect').disabled = false;
         } finally {
             busy = false;
@@ -175,12 +156,11 @@
         only('state-update');
         $('ver-from').textContent = info.current;
         $('ver-to').textContent = info.latest;
-        $('zip-link').href = info.zipUrl;
-        $('reload-now').onclick = () => { if (!busy) reloadInto(info.latest); };
-        $('do-update').onclick = () => runUpdate(info);
+        $('do-update').onclick = () => runUpdate(info, false);
+        $('reselect').onclick = () => runUpdate(info, true);
         document.title = `Güncelleme ${info.latest} · IMDb Arşiv`;
-        U.getSavedDir().then(d => { if (d) $('first-time').hidden = true; }, () => {});
-        watchDisk(info.latest);
+        // Başarısız sayfasında klasör yeniden seçildiyse güncelleme kendiliğinden başlar.
+        if (params.get('auto') === '1') runUpdate(info, false);
     }
 
     async function check(force) {
