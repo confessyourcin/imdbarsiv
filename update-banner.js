@@ -128,17 +128,20 @@
     }
 
     let running = false;
+    let rerun = false;
     async function run() {
-        if (running || host) return;
+        if (running) { rerun = true; return; }
         running = true;
         try {
-            const info = await send({ type: 'update-check' });
+            const info = await send({ type: 'update-check', force: true });
             if (!info || !info.ok || !info.available) return;
-            if (hiddenOnUrl === location.href || host) return;
+            if (hiddenOnUrl === location.href) return;
+            if (host) host.remove();
             hiddenOnUrl = null;
             show(info);
         } finally {
             running = false;
+            if (rerun) { rerun = false; run(); }
         }
     }
 
@@ -150,6 +153,8 @@
     setInterval(() => {
         if (location.href === lastUrl) return;
         lastUrl = location.href;
-        if (!host && hiddenOnUrl && hiddenOnUrl !== location.href) run();
+        if (host) { host.remove(); host = null; }
+        hiddenOnUrl = null;
+        run();
     }, 1000);
 })();
