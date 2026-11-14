@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>IMDb Arşivi</title>
+    <script src="app-preferences.js"></script>
     <link rel="icon" href="icon.png">
     <link rel="stylesheet" href="app.css">
     <link rel="stylesheet" href="styles.css">
@@ -12,13 +13,23 @@
     <header class="topbar" id="topbar">
         <a class="brand" href="#" id="brand" aria-label="Ana sayfa">
             <span class="brand-logo">IMDb</span>
-            <span class="brand-name">Arşiv</span>
+            <span class="brand-name" data-tr="Arşiv" data-en="Archive">Arşiv</span>
         </a>
         <form class="search" id="search-form" role="search" autocomplete="off">
             <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
             <input id="search-input" type="search" placeholder="Film veya dizi ara (ör. Prison Break)" aria-label="Film veya dizi ara" spellcheck="false">
             <button type="button" class="search-clear" id="search-clear" aria-label="Aramayı temizle" hidden>×</button>
         </form>
+        <div class="display-controls">
+            <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Aydınlık moda geç">
+                <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
+                <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/></svg>
+            </button>
+            <div class="language-switch" role="group" aria-label="Language / Dil">
+                <button type="button" data-language="tr" lang="tr" aria-label="Türkçe">TR</button>
+                <button type="button" data-language="en" lang="en" aria-label="English">EN</button>
+            </div>
+        </div>
     </header>
 
     <main id="main">
@@ -26,23 +37,23 @@
             <div class="hero-bg" id="hero-bg"></div>
             <div class="hero-shade"></div>
             <div class="hero-body">
-                <p class="hero-kicker" id="hero-kicker">Yükleniyor…</p>
+                <p class="hero-kicker" id="hero-kicker" data-tr="Yükleniyor…" data-en="Loading…">Yükleniyor…</p>
                 <h1 class="hero-title" id="hero-title">&nbsp;</h1>
                 <p class="hero-meta" id="hero-meta"></p>
                 <p class="hero-desc" id="hero-desc"></p>
                 <div class="hero-actions" id="hero-actions" hidden>
                     <button type="button" class="btn btn-play" id="hero-play">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                        Oynat
+                        <span data-tr="Oynat" data-en="Play">Oynat</span>
                     </button>
-                    <button type="button" class="btn btn-ghost" id="hero-info">Ayrıntılar</button>
+                    <button type="button" class="btn btn-ghost" id="hero-info" data-tr="Ayrıntılar" data-en="Details">Ayrıntılar</button>
                 </div>
             </div>
         </section>
 
         <section class="results" id="results" hidden>
             <div class="section-head">
-                <h2 id="results-title">Sonuçlar</h2>
+                <h2 id="results-title" data-tr="Sonuçlar" data-en="Results">Sonuçlar</h2>
                 <span class="section-note" id="results-note"></span>
             </div>
             <div class="grid" id="results-grid"></div>
@@ -51,7 +62,7 @@
         <div id="rows">
             <section class="row" id="row-movies">
                 <div class="section-head">
-                    <h2 id="row-movies-title">Bugün Top 10 Film 🌟</h2>
+                    <h2 id="row-movies-title" data-tr="Bugün Top 10 Film 🌟" data-en="Top 10 Movies Today 🌟">Bugün Top 10 Film 🌟</h2>
                     <span class="section-note" id="row-movies-note"></span>
                 </div>
                 <div class="rail-wrap">
@@ -62,7 +73,7 @@
             </section>
             <section class="row" id="row-tv">
                 <div class="section-head">
-                    <h2 id="row-tv-title">Bugün Top 10 Dizi ⭐</h2>
+                    <h2 id="row-tv-title" data-tr="Bugün Top 10 Dizi ⭐" data-en="Top 10 Series Today ⭐">Bugün Top 10 Dizi ⭐</h2>
                     <span class="section-note" id="row-tv-note"></span>
                 </div>
                 <div class="rail-wrap">
@@ -83,26 +94,28 @@
             <p class="detail-meta" id="detail-meta"></p>
             <p class="detail-desc" id="detail-desc"></p>
             <div class="episode-pick" id="episode-pick" hidden>
-                <label>Sezon <input type="number" id="ep-season" min="1" max="99" value="1" inputmode="numeric"></label>
-                <label>Bölüm <input type="number" id="ep-episode" min="1" max="999" value="1" inputmode="numeric"></label>
-                <label class="ep-free"><input type="checkbox" id="ep-free"> Bölümü oynatıcıda seçeceğim</label>
+                <label><span data-tr="Sezon" data-en="Season">Sezon</span> <input type="number" id="ep-season" min="1" max="99" value="1" inputmode="numeric"></label>
+                <label><span data-tr="Bölüm" data-en="Episode">Bölüm</span> <input type="number" id="ep-episode" min="1" max="999" value="1" inputmode="numeric"></label>
+                <label class="ep-free"><input type="checkbox" id="ep-free"> <span data-tr="Bölümü oynatıcıda seçeceğim" data-en="Choose episode in player">Bölümü oynatıcıda seçeceğim</span></label>
             </div>
             <div class="detail-actions">
                 <button type="button" class="btn btn-play" id="detail-play">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-                    Oynat
+                    <span data-tr="Oynat" data-en="Play">Oynat</span>
                 </button>
-                <a class="btn btn-ghost" id="detail-imdb" target="_blank" rel="noopener noreferrer">IMDb’de aç ↗</a>
+                <a class="btn btn-ghost" id="detail-imdb" target="_blank" rel="noopener noreferrer" data-tr="IMDb’de aç ↗" data-en="Open on IMDb ↗">IMDb’de aç ↗</a>
             </div>
         </div>
     </dialog>
 
     <footer class="site-foot">
-        <span>IMDb Arşiv <b id="app-version"></b></span>
-        <a href="update.html" target="_blank">Güncellemeleri denetle</a>
+        <span>IMDb <span data-tr="Arşiv" data-en="Archive">Arşiv</span> <b id="app-version"></b></span>
+        <a href="update.html" target="_blank" data-tr="Güncellemeleri denetle" data-en="Check for updates">Güncellemeleri denetle</a>
+        <span class="tmdb-attribution">This product uses the TMDB API but is not endorsed or certified by TMDB.</span>
     </footer>
 
     <script src="content.js"></script>
+    <script src="turkish-metadata.js"></script>
     <script src="app.js"></script>
     <script src="updater-core.js"></script>
     <script src="banner-update.js"></script>

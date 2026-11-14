@@ -59,6 +59,7 @@ Neden tamamen sessiz değil? Chrome, Web Mağazası dışından elle yüklenen e
 | `v3.sg.media-imdb.com` | IMDb arama önerileri |
 | `hdfilmcehennemi.nl` | HDFilmCehennemi'de IMDb kimliğiyle arama |
 | `codeload.github.com` | Güncelleme zip'ini indirme |
+| `api.themoviedb.org` | Kullanıcı TMDB API anahtarı eklerse Türkçe ad ve açıklamaları alma |
 | `storage` | Güncelleme denetim zamanı ve "sonra" tercihi |
 | `activeTab` | Etkin sekmede çalışma |
 

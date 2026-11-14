@@ -3,12 +3,16 @@
 // uç noktasından gelir. Oynatma, IMDb sayfasındaki ile aynı oynatıcıyla (content.js) olur.
 (function () {
     'use strict';
+    const { t, language } = window.ArchivePreferences;
 
     const CHART_TTL = 6 * 60 * 60 * 1000;
     const SUGGEST = 'https://v3.sg.media-imdb.com/suggestion/x/';
     const TV_QIDS = new Set(['tvSeries', 'tvMiniSeries']);
     const SKIP_QIDS = new Set(['videoGame', 'podcastSeries', 'podcastEpisode', 'musicVideo']);
-    const TYPE_LABELS = {
+    const TYPE_LABELS = language === 'en' ? {
+        movie: 'Movie', tvSeries: 'Series', tvMiniSeries: 'Miniseries', tvMovie: 'TV movie',
+        tvSpecial: 'TV special', video: 'Video', short: 'Short film', tvShort: 'Short film', tvEpisode: 'Episode'
+    } : {
         movie: 'Film', tvSeries: 'Dizi', tvMiniSeries: 'Mini dizi', tvMovie: 'TV filmi',
         tvSpecial: 'TV özel', video: 'Video', short: 'Kısa film', tvShort: 'Kısa film', tvEpisode: 'Bölüm'
     };
@@ -69,7 +73,7 @@
         const res = await fetch(SUGGEST + encodeURIComponent(q) + '.json', { credentials: 'omit' });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        return (Array.isArray(data && data.d) ? data.d : []).map(fromSuggestion).filter(Boolean);
+        return window.ImdbTurkishMetadata.items((Array.isArray(data && data.d) ? data.d : []).map(fromSuggestion).filter(Boolean));
     }
 
     async function lookupById(id) {
@@ -95,12 +99,12 @@
                 id,
                 title: decode(it.name) || id,
                 isTV: kind === 'tvmeter' || /TV/.test(it['@type'] || ''),
-                typeLabel: kind === 'tvmeter' ? 'Dizi' : 'Film',
+                typeLabel: kind === 'tvmeter' ? t('Dizi', 'Series') : t('Film', 'Movie'),
                 year: '',
                 image: it.image,
                 cast: '',
                 rating: agg && Number.isFinite(Number(agg.ratingValue)) ? Number(agg.ratingValue) : null,
-                genre: decode(it.genre || ''),
+                genre: Array.isArray(it.genre) ? it.genre.join(', ') : decode(it.genre || ''),
                 desc: decode(it.description || '')
             });
             if (items.length === 10) break;
@@ -231,7 +235,7 @@
     function openDetail(item) {
         if (playerOpen()) return;
         detailItem = item;
-        $('detail-type').textContent = item.typeLabel || (item.isTV ? 'Dizi' : 'Film');
+        $('detail-type').textContent = item.isTV ? t('Dizi', 'Series') : t('Film', 'Movie');
         $('detail-title').textContent = item.title;
         $('detail-meta').textContent = metaParts(item).map(p => p.cls === 'rating' ? '★ ' + p.text : p.text)
             .concat(item.cast ? [item.cast] : []).join(' · ');
@@ -271,15 +275,16 @@
         const rail = $(railId);
         skeletonRail(rail);
         const r = await loadTop(kind);
+        r.items = await window.ImdbTurkishMetadata.items(r.items);
         rail.textContent = '';
         if (!r.live) {
-            $(titleId).textContent = `Öne Çıkan ${label}`;
-            $(noteId).textContent = 'IMDb popüler listesi alınamadı; IMDb sekmesini bir kez açıp sayfayı yenilemeyi dene.';
+            $(titleId).textContent = t(`Öne Çıkan ${label}`, `Featured ${label}`);
+            $(noteId).textContent = t('IMDb popüler listesi alınamadı; IMDb sekmesini bir kez açıp sayfayı yenilemeyi dene.', 'IMDb chart unavailable; open IMDb once and refresh this page.');
         } else {
-            $(noteId).textContent = 'IMDb en popüler';
+            $(noteId).textContent = t('IMDb en popüler', 'Most popular on IMDb');
         }
         if (!r.items.length) {
-            rail.appendChild(el('p', 'empty', 'Liste yüklenemedi.'));
+            rail.appendChild(el('p', 'empty', t('Liste yüklenemedi.', 'Could not load the list.')));
             return r;
         }
         r.items.forEach((item, i) => rail.appendChild(topItem(item, i + 1)));
@@ -316,22 +321,22 @@
     async function runSearch(q) {
         const seq = ++searchSeq;
         showResults();
-        $('results-title').textContent = `“${q}” için sonuçlar`;
-        $('results-note').textContent = 'Aranıyor…';
+        $('results-title').textContent = t(`“${q}” için sonuçlar`, `Results for “${q}”`);
+        $('results-note').textContent = t('Aranıyor…', 'Searching…');
         let items;
         try {
             items = await suggest(q);
         } catch (e) {
             if (seq !== searchSeq) return;
             $('results-grid').textContent = '';
-            $('results-note').textContent = 'Arama başarısız: ' + e.message;
+            $('results-note').textContent = t('Arama başarısız: ', 'Search failed: ') + e.message;
             return;
         }
         if (seq !== searchSeq) return;
         const grid = $('results-grid');
         grid.textContent = '';
-        $('results-note').textContent = items.length ? `${items.length} başlık` : '';
-        if (!items.length) { grid.appendChild(el('p', 'empty', 'Sonuç bulunamadı.')); return; }
+        $('results-note').textContent = items.length ? t(`${items.length} başlık`, `${items.length} titles`) : '';
+        if (!items.length) { grid.appendChild(el('p', 'empty', t('Sonuç bulunamadı.', 'No results found.'))); return; }
         items.forEach(item => grid.appendChild(card(item)));
     }
 
@@ -344,7 +349,7 @@
             if (!q) { showHome(); return; }
             if (!$('results').hidden) {
                 $('results-grid').textContent = '';
-                $('results-note').textContent = 'Aramak için en az 2 harf yaz.';
+                $('results-note').textContent = t('Aramak için en az 2 harf yaz.', 'Type at least 2 characters to search.');
             }
             return;
         }
@@ -379,16 +384,17 @@
 
     // ---------- Başlangıç ----------
     (async () => {
+        if (document.readyState === 'loading') await new Promise(resolve => document.addEventListener('DOMContentLoaded', resolve, { once: true }));
         const [movies, tv] = await Promise.all([
-            fillRow('moviemeter', 'rail-movies', 'row-movies-title', 'row-movies-note', 'Filmler'),
-            fillRow('tvmeter', 'rail-tv', 'row-tv-title', 'row-tv-note', 'Diziler')
+            fillRow('moviemeter', 'rail-movies', 'row-movies-title', 'row-movies-note', t('Filmler', 'Movies')),
+            fillRow('tvmeter', 'rail-tv', 'row-tv-title', 'row-tv-note', t('Diziler', 'Series'))
         ]);
         const first = movies.items[0] || tv.items[0];
-        if (first) setHero(first, movies.live ? '#1 · Bugün en popüler film' : 'Öne çıkan');
+        if (first) setHero(first, movies.live ? t('#1 · Bugün en popüler film', '#1 · Most popular movie today') : t('Öne çıkan', 'Featured'));
         else {
-            $('hero-kicker').textContent = 'Bağlantı yok';
-            $('hero-title').textContent = 'Liste yüklenemedi';
-            $('hero-desc').textContent = 'Yukarıdan arama yapmayı deneyebilirsin.';
+            $('hero-kicker').textContent = t('Bağlantı yok', 'No connection');
+            $('hero-title').textContent = t('Liste yüklenemedi', 'Could not load the list');
+            $('hero-desc').textContent = t('Yukarıdan arama yapmayı deneyebilirsin.', 'Try searching above.');
         }
     })();
 

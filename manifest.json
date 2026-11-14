@@ -8,6 +8,7 @@
     "storage"
   ],
   "host_permissions": [
+    "https://api.themoviedb.org/*",
     "https://www.hdfilmcehennemi.nl/*",
     "https://v3.sg.media-imdb.com/*",
     "https://www.imdb.com/*",

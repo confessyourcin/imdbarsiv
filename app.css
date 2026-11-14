@@ -73,7 +73,7 @@ a { color: inherit; }
     padding: 0 44px;
     border-radius: 999px;
     border: 1px solid var(--line);
-    background: rgba(22,22,24,.9);
+    background: var(--surface);
     color: var(--text);
     font-size: 15px;
 }
@@ -382,3 +382,30 @@ a { color: inherit; }
 .site-foot a:hover { color: var(--accent); }
 
 @media (max-width: 900px) { .rail { --cw-min: 118px; } }
+
+:root[data-theme="light"] {
+    --bg: #f4f5f7; --surface: #fff; --surface-2: #e5e7eb; --line: #cbd0d8;
+    --text: #181b22; --muted: #515b6b; color-scheme: light;
+}
+.display-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.theme-toggle, .language-switch button { min-width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer; }
+.theme-toggle { display: grid; place-items: center; }
+.theme-toggle svg { width: 21px; height: 21px; }
+.theme-toggle .moon-icon { display: none; }
+[data-theme="light"] .theme-toggle .moon-icon { display: block; }
+[data-theme="light"] .theme-toggle .sun-icon { display: none; }
+.language-switch { display: flex; gap: 3px; }
+.language-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+.tmdb-attribution { flex-basis: 100%; font-size: 11px; color: var(--muted); }
+.display-controls button:hover { border-color: var(--accent); }
+[data-theme="light"] .topbar { background: linear-gradient(to bottom, rgba(244,245,247,.98), rgba(244,245,247,.85)); }
+[data-theme="light"] .topbar.solid { background: rgba(244,245,247,.98); }
+[data-theme="light"] .hero-shade { background: linear-gradient(to right, rgba(244,245,247,.98), rgba(244,245,247,.8) 55%, rgba(244,245,247,.2)), linear-gradient(to top, var(--bg), transparent 60%); }
+[data-theme="light"] .hero-desc, [data-theme="light"] .detail-desc, [data-theme="light"] .episode-pick label, [data-theme="light"] .card-sub { color: #414958; }
+[data-theme="light"] .detail-type { color: #806000; }
+[data-theme="light"] .btn-ghost { background: var(--surface-2); color: var(--text); }
+@media (max-width: 640px) {
+    .display-controls { margin-left: auto; }
+    .topbar .search { order: 3; flex-basis: 100%; max-width: none; }
+    .hero { padding-top: 155px; }
+}
