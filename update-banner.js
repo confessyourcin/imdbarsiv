@@ -9,6 +9,7 @@
 
     let host = null;           // gösterilen kart
     let hiddenOnUrl = null;    // "Hayır" denilen sayfa adresi
+    let installing = false;
 
     function send(msg) {
         return new Promise((resolve) => {
@@ -119,10 +120,36 @@
         const hideOnThisPage = () => { hiddenOnUrl = location.href; remove(); };
         x.onclick = hideOnThisPage;
         no.onclick = hideOnThisPage;
+        const inlineUpdater = location.protocol === 'chrome-extension:' ? window.ImdbArsivBannerUpdater : null;
+        if (inlineUpdater) {
+            yes.disabled = true;
+            inlineUpdater.ready.then(() => { yes.disabled = false; });
+        }
         yes.onclick = async () => {
             yes.disabled = true;
             yes.textContent = 'Başlatılıyor…';
             p.textContent = 'Güncelleme başlatılıyor…';
+            if (inlineUpdater) {
+                installing = true;
+                x.disabled = true;
+                no.disabled = true;
+                p.setAttribute('aria-live', 'polite');
+                try {
+                    // start, izin isteğini aynı tıklama çağrısı içinde açar.
+                    await inlineUpdater.start(info, text => { p.textContent = text; });
+                    yes.remove();
+                    no.remove();
+                    notes.remove();
+                } catch (e) {
+                    p.textContent = e && e.name === 'AbortError' ? 'Klasör seçimi iptal edildi.' : (e.message || String(e));
+                    yes.disabled = false;
+                    yes.textContent = 'Tekrar dene';
+                    no.disabled = false;
+                    x.disabled = false;
+                    installing = false;
+                }
+                return;
+            }
             const res = await send({ type: 'update-start', version: info.latest });
             if (res && res.ok) {
                 p.textContent = 'Güncelleme başlatıldı. İzin veya klasör seçimi gerekiyorsa açılan güncelleme sayfasında tamamla.';
@@ -140,6 +167,7 @@
     let running = false;
     let rerun = false;
     async function run() {
+        if (installing) return;
         if (running) { rerun = true; return; }
         running = true;
         try {
@@ -161,6 +189,7 @@
     // IMDb bazı sayfa geçişlerini yeniden yüklemeden yapar; adres değişince kart yeniden denenir.
     let lastUrl = location.href;
     setInterval(() => {
+        if (installing) return;
         if (location.href === lastUrl) return;
         lastUrl = location.href;
         if (host) { host.remove(); host = null; }

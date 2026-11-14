@@ -325,6 +325,16 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             .then(() => sendResponse({ ok: true }), () => sendResponse({ ok: false }));
         return true;
     }
+    if (msg.type === 'update-inline-reload') {
+        if (sender.url !== chrome.runtime.getURL('app.html') || !isValidVersion(msg.version)) {
+            sendResponse({ ok: false });
+            return;
+        }
+        patchUpdateState({ pendingReload: { to: msg.version, inline: true, at: Date.now() } })
+            .then(() => { sendResponse({ ok: true }); setTimeout(() => chrome.runtime.reload(), 800); })
+            .catch(() => sendResponse({ ok: false }));
+        return true;
+    }
 });
 
 // Güncelleme sayfası eklentiyi yeniden başlattıysa: yeni sürüm gerçekten yüklendi mi?
@@ -336,6 +346,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const now = chrome.runtime.getManifest().version;
         await patchUpdateState({ pendingReload: null, checkedAt: 0 });
         const ok = !to || compareVersions(now, to) >= 0;
+        if (u.pendingReload.inline && ok) return;
         await openUpdatePage(ok ? { done: now } : { to, failed: '1' });
     } catch (e) { /* yok say */ }
 })();
